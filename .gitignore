@@ -396,3 +396,11 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# .NET Core
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.user
