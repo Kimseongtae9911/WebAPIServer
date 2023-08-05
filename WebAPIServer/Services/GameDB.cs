@@ -6,10 +6,8 @@ using Microsoft.Extensions.Options;
 
 public class DbConfig
 {
-    public String MasterDB { get; set; }
     public String AccountDB { get; set; }
     public String GameDB { get; set; }
-    public String Memcached { get; set; }
 }
 
 namespace WebAPIServer.Services
@@ -26,24 +24,17 @@ namespace WebAPIServer.Services
         {
             m_dbConfig = dbConfig;
 
-            Open();
+            m_dbConnection = new MySqlConnection(m_dbConfig.Value.GameDB);
+            m_dbConnection.Open();
 
             m_compiler = new SqlKata.Compilers.MySqlCompiler();
             m_queryFactory = new QueryFactory(m_dbConnection, m_compiler);
         }
-        public void Release()
+        ~GameDB()
         {
-            Close();
+            Dispose();
         }
-
-        private void Open()
-        {
-            m_dbConnection = new MySqlConnection(m_dbConfig.Value.GameDB);
-
-            m_dbConnection.Open();
-        }
-
-        private void Close()
+        public void Dispose()
         {
             m_dbConnection.Close();
         }
