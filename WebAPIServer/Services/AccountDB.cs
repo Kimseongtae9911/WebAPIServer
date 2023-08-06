@@ -2,6 +2,7 @@
 using MySqlConnector;
 using SqlKata.Execution;
 using System.Data;
+using System.Security.Principal;
 
 namespace WebAPIServer.Services
 {
@@ -47,14 +48,47 @@ namespace WebAPIServer.Services
                     return ErrorCode.SignUpFail;
                 }
 
-                Console.WriteLine($"[CreateAccount] ID: {id}, Password: {password}");
+                Console.WriteLine($"[ClientSignUp] ID: {id}, Password: {password}");
                 return ErrorCode.None;
             }
             catch (Exception e)
             {
                 Console.WriteLine("Error Msg: " + e.Message + ", ");
-                Console.WriteLine($"[AccountDb.CreateAccount] ErrorCode: {ErrorCode.SignUpFailException}, ID: {id}");
+                Console.WriteLine($"[AccountDB.ClientSignUp] ErrorCode: {ErrorCode.SignUpFailException}, ID: {id}");
                 return ErrorCode.SignUpFailException;
+            }
+        }
+
+        public async Task<ErrorCode> Login(string id, string password)
+        {
+            try
+            {
+                var account = await m_queryFactory.Query("account")
+                    .Where("ID", id)
+                    .FirstOrDefaultAsync();
+
+                if(account == null)
+                {
+                    Console.WriteLine($"[AccountDB.Login] ErrorCode: {ErrorCode.LoginFailNoAccount}, ID: {id}");
+                    return ErrorCode.LoginFailNoAccount;
+                }
+
+                if(password.Equals(account.Password))
+                {
+                    Console.WriteLine($"[Login] ID: {id}, Password: {password}");
+                    return ErrorCode.None;
+                }
+                else
+                {
+                    Console.WriteLine($"[AccountDB.Login] ErrorCode: {ErrorCode.LoginFailWrongPassword}, ID: {id}");
+                    return ErrorCode.LoginFailWrongPassword;
+                }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine("Error Msg: " + e.Message + ", ");
+                Console.WriteLine($"[AccountDB.Login] ErrorCode: {ErrorCode.LoginFailException}, ID: {id}");
+                return ErrorCode.LoginFailException;
             }
         }
     }

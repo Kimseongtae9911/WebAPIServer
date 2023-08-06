@@ -14,8 +14,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Model\" />
-    <Folder Include="ModelReqRes\" />
     <Folder Include="Services\" />
   </ItemGroup>
 

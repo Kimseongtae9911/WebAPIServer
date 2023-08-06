@@ -10,5 +10,8 @@
         // Account 2000 ~
         SignUpFailException = 2001,
         SignUpFail = 2002,
+        LoginFailNoAccount = 2003,
+        LoginFailWrongPassword = 2004,
+        LoginFailException = 2005,
     }
 }

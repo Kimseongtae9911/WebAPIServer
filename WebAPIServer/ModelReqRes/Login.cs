@@ -2,7 +2,7 @@
 
 namespace WebAPIServer.ModelReqRes
 {
-    public class PkClientSignUpReq
+    public class PkLoginReq
     {
         [MinLength(1, ErrorMessage = "ID CANNOT BE EMPTY")]
         [StringLength(Constants.ID_LENGTH, ErrorMessage = "ID IS TOO LONG")]
@@ -15,7 +15,7 @@ namespace WebAPIServer.ModelReqRes
         public string Password { get; set; }
     }
 
-    public class PkClientSignUpRes
+    public class PkLoginRes
     {
         public ErrorCode Result { get; set; } = ErrorCode.None;
     }
