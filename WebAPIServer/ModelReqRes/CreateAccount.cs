@@ -2,7 +2,7 @@
 
 namespace WebAPIServer.ModelReqRes;
 
-public class LoginRequest
+public class CreateAccountRequest
 {
     [MinLength(1, ErrorMessage = "ID CANNOT BE EMPTY")]
     [StringLength(Constants.IdLength, ErrorMessage = "ID IS TOO LONG")]
@@ -15,8 +15,7 @@ public class LoginRequest
     public string Password { get; set; }
 }
 
-public class LoginResponse
+public class CreateAccountResponse
 {
     public ErrorCode Result { get; set; } = ErrorCode.None;
-    public string AuthToken { get; set; }
 }

@@ -3,93 +3,98 @@ using MySqlConnector;
 using SqlKata.Execution;
 using System.Data;
 using System.Security.Principal;
+using WebAPIServer.Utils;
+using WebAPIServer.ModelDb;
 
-namespace WebAPIServer.Services
+namespace WebAPIServer.Services;
+
+public class AccountDB : IAccountDB
 {
-    public class AccountDB : IAccountDB
+    readonly IOptions<DbConfig> _dbConfig;
+
+    IDbConnection _dbConnection;
+    SqlKata.Compilers.MySqlCompiler _compiler;
+    QueryFactory _queryFactory;
+
+    public AccountDB(IOptions<DbConfig> dbConfig)
     {
-        readonly IOptions<DbConfig> m_dbConfig;
+        _dbConfig = dbConfig;
 
-        IDbConnection m_dbConnection;
-        SqlKata.Compilers.MySqlCompiler m_compiler;
-        QueryFactory m_queryFactory;
+        _dbConnection = new MySqlConnection(_dbConfig.Value.AccountDB);
+        _dbConnection.Open();
 
-        public AccountDB(IOptions<DbConfig> dbConfig)
+        _compiler = new SqlKata.Compilers.MySqlCompiler();
+        _queryFactory = new QueryFactory(_dbConnection, _compiler);
+    }
+    ~AccountDB()
+    {
+        Dispose();
+    }
+    public void Dispose()
+    {
+        _dbConnection.Close();
+    }
+
+    public async Task<ErrorCode> CreateAccount(string id, string password)
+    {
+        try
         {
-            m_dbConfig = dbConfig;
+            var saltValue = Security.GetSaltString();
+            var hashedPassword = Security.HashPassword(saltValue, password);
 
-            m_dbConnection = new MySqlConnection(m_dbConfig.Value.AccountDB);
-            m_dbConnection.Open();
-
-            m_compiler = new SqlKata.Compilers.MySqlCompiler();
-            m_queryFactory = new QueryFactory(m_dbConnection, m_compiler);
-        }
-        ~AccountDB()
-        {
-            Dispose();
-        }
-        public void Dispose()
-        {
-            m_dbConnection.Close();
-        }
-
-        public async Task<ErrorCode> ClientSignUp(string id, string password)
-        {
-            try
+            var count = await _queryFactory.Query("account").InsertAsync(new
             {
-                var count = await m_queryFactory.Query("account").InsertAsync(new
-                {
-                    ID = id,
-                    Password = password
-                });
+                ID = id,
+                SaltValue = saltValue,
+                Password = hashedPassword
+            });
 
-                if (count != 1)
-                {
-                    return ErrorCode.SignUpFail;
-                }
+            if (count != 1)
+            {
+                return ErrorCode.CreateAccountFail;
+            }
 
-                Console.WriteLine($"[ClientSignUp] ID: {id}, Password: {password}");
+            Console.WriteLine($"[CreateAccount] ID: {id}, SaltValue: {saltValue}, Password: {hashedPassword}");
+            return ErrorCode.None;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[AccountDB.CreateAccount] ErrorCode: {nameof(ErrorCode.CreateAccountFailException)}, ID: {id}");
+            return ErrorCode.CreateAccountFailException;
+        }
+    }
+
+    public async Task<ErrorCode> Login(string id, string password)
+    {
+        try
+        {
+            var account = await _queryFactory.Query("account")
+                .Where("ID", id)
+                .FirstOrDefaultAsync<TableAccount>();
+
+            if(account == null)
+            {
+                Console.WriteLine($"[AccountDB.Login] ErrorCode: {nameof(ErrorCode.LoginFailNoAccount)}, ID: {id}");
+                return ErrorCode.LoginFailNoAccount;
+            }
+
+            if(account.Password.Equals(Security.HashPassword(account.SaltValue, password)))
+            {
+                Console.WriteLine($"[Login] ID: {id}, Password: {nameof(account.Password)}");
                 return ErrorCode.None;
             }
-            catch (Exception e)
+            else
             {
-                Console.WriteLine("Error Msg: " + e.Message + ", ");
-                Console.WriteLine($"[AccountDB.ClientSignUp] ErrorCode: {ErrorCode.SignUpFailException}, ID: {id}");
-                return ErrorCode.SignUpFailException;
+                Console.WriteLine($"[AccountDB.Login] ErrorCode: {nameof(ErrorCode.LoginFailWrongPassword)}, ID: {id}");
+                return ErrorCode.LoginFailWrongPassword;
             }
         }
-
-        public async Task<ErrorCode> Login(string id, string password)
+        catch(Exception e)
         {
-            try
-            {
-                var account = await m_queryFactory.Query("account")
-                    .Where("ID", id)
-                    .FirstOrDefaultAsync();
-
-                if(account == null)
-                {
-                    Console.WriteLine($"[AccountDB.Login] ErrorCode: {ErrorCode.LoginFailNoAccount}, ID: {id}");
-                    return ErrorCode.LoginFailNoAccount;
-                }
-
-                if(password.Equals(account.Password))
-                {
-                    Console.WriteLine($"[Login] ID: {id}, Password: {password}");
-                    return ErrorCode.None;
-                }
-                else
-                {
-                    Console.WriteLine($"[AccountDB.Login] ErrorCode: {ErrorCode.LoginFailWrongPassword}, ID: {id}");
-                    return ErrorCode.LoginFailWrongPassword;
-                }
-            }
-            catch(Exception e)
-            {
-                Console.WriteLine("Error Msg: " + e.Message + ", ");
-                Console.WriteLine($"[AccountDB.Login] ErrorCode: {ErrorCode.LoginFailException}, ID: {id}");
-                return ErrorCode.LoginFailException;
-            }
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[AccountDB.Login] ErrorCode: {nameof(ErrorCode.LoginFailException)}, ID: {id}");
+            return ErrorCode.LoginFailException;
         }
     }
 }

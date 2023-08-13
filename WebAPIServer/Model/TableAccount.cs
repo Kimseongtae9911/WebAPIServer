@@ -1,8 +1,8 @@
-﻿namespace WebAPIServer.ModelDb
+﻿namespace WebAPIServer.ModelDb;
+
+public class TableAccount
 {
-    public class TableAccount
-    {
-        private string ID { get; set; }
-        public string Password { get; set; }
-    }
+    private string ID { get; set; }
+    public string Password { get; set; }
+    public String SaltValue { get; set; }
 }

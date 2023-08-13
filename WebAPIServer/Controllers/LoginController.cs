@@ -1,33 +1,45 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.ModelReqRes;
 using WebAPIServer.Services;
+using WebAPIServer.Utils;
 
-namespace WebAPIServer.Controllers
+namespace WebAPIServer.Controllers;
+
+[ApiController]
+[Route("[controller]")]
+public class LoginController : ControllerBase
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class LoginController : ControllerBase
+    private readonly IAccountDB _accountDB;
+    private readonly IMemoryDB _memoryDB;
+
+    public LoginController(IAccountDB accountDB, IMemoryDB memoryDB)
     {
-        private readonly IAccountDB m_accountDB;
+        _accountDB = accountDB;
+        _memoryDB = memoryDB;
+    }
 
-        public LoginController(IAccountDB accountDB)
+    [HttpPost]
+    public async Task<LoginResponse> Post(LoginRequest request)
+    {
+        var response = new LoginResponse();
+
+        var errorCode = await _accountDB.Login(request.ID, request.Password);
+        if(errorCode != ErrorCode.None)
         {
-            m_accountDB = accountDB;
-        }
-
-        [HttpPost]
-        public async Task<PkLoginRes> Post(PkLoginReq request)
-        {
-            var response = new PkLoginRes();
-
-            var errorCode = await m_accountDB.Login(request.ID, request.Password);
-            if(errorCode != ErrorCode.None)
-            {
-                response.Result = errorCode;
-                return response;
-            }
-
+            response.Result = errorCode;
             return response;
         }
+
+        var authToken = Security.GetSaltString();
+
+        errorCode = await _memoryDB.RegisterUser(authToken, request.Password);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
+        response.AuthToken = authToken;
+        return response;
     }
 }

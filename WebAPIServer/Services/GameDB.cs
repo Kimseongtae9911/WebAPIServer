@@ -6,29 +6,31 @@ using Microsoft.Extensions.Options;
 
 public class DbConfig
 {
-    public String AccountDB { get; set; }
-    public String GameDB { get; set; }
+    public string AccountDB { get; set; }
+    public string GameDB { get; set; }
+
+    public string MemoryDB { get; set; }
 }
 
 namespace WebAPIServer.Services
 {
     public class GameDB : IGameDB
     {
-        readonly IOptions<DbConfig> m_dbConfig;
+        readonly IOptions<DbConfig> _dbConfig;
 
-        IDbConnection m_dbConnection;
-        SqlKata.Compilers.MySqlCompiler m_compiler;
+        IDbConnection _dbConnection;
+        SqlKata.Compilers.MySqlCompiler _compiler;
         QueryFactory m_queryFactory;
 
         public GameDB(IOptions<DbConfig> dbConfig)
         {
-            m_dbConfig = dbConfig;
+            _dbConfig = dbConfig;
 
-            m_dbConnection = new MySqlConnection(m_dbConfig.Value.GameDB);
-            m_dbConnection.Open();
+            _dbConnection = new MySqlConnection(_dbConfig.Value.GameDB);
+            _dbConnection.Open();
 
-            m_compiler = new SqlKata.Compilers.MySqlCompiler();
-            m_queryFactory = new QueryFactory(m_dbConnection, m_compiler);
+            _compiler = new SqlKata.Compilers.MySqlCompiler();
+            m_queryFactory = new QueryFactory(_dbConnection, _compiler);
         }
         ~GameDB()
         {
@@ -36,7 +38,7 @@ namespace WebAPIServer.Services
         }
         public void Dispose()
         {
-            m_dbConnection.Close();
+            _dbConnection.Close();
         }
 
     }
