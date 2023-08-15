@@ -14,5 +14,9 @@ public enum ErrorCode : UInt16
     LoginFailWrongPassword = 2004,
     LoginFailException = 2005,
     LoginFailRegisterRedis = 2006,
-    LoginFailRegisterRedisException = 2007
+    LoginFailRegisterRedisException = 2007,
+
+    // Redis 3000 ~
+    VerifyFailException = 3000,
+    NoExistingAuthToken = 3001,
 }

@@ -11,8 +11,8 @@ public class MemoryDB : IMemoryDB
 
     public MemoryDB(IOptions<DbConfig> dbConfig)
     {
-        _dbConfig = dbConfig;
-        var config = new RedisConfig("default", "127.0.0.1");
+        _dbConfig = dbConfig;        
+        var config = new RedisConfig("default", _dbConfig.Value.MemoryDB);
         _redisConnection = new RedisConnection(config);
     }
 
@@ -32,5 +32,31 @@ public class MemoryDB : IMemoryDB
         }
 
         return ErrorCode.None;
+    }
+
+    public async Task<Tuple<ErrorCode, string>> GetAuthToken(string id)
+    {
+        try
+        {
+            var redis = new RedisString<string>(_redisConnection, id, null);
+
+            var authToken = await redis.GetAsync();
+
+            if (authToken.HasValue)
+            {
+                return new Tuple<ErrorCode, string>(ErrorCode.None, authToken.Value);
+            }
+            else
+            {
+                return new Tuple<ErrorCode, string>(ErrorCode.None, "");
+            }
+            
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[MemoryDB.GetAuthToken] ErrorCode: {nameof(ErrorCode.NoExistingAuthToken)}, ID: {id}");
+            return new Tuple<ErrorCode, string>(ErrorCode.NoExistingAuthToken, "");
+        }
     }
 }

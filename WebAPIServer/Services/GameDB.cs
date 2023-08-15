@@ -6,10 +6,10 @@ using Microsoft.Extensions.Options;
 
 public class DbConfig
 {
-    public string AccountDB { get; set; }
-    public string GameDB { get; set; }
+    public string AccountDB { get; set; } = string.Empty;
+    public string GameDB { get; set; } = string.Empty;
 
-    public string MemoryDB { get; set; }
+    public string MemoryDB { get; set; } = string.Empty;
 }
 
 namespace WebAPIServer.Services

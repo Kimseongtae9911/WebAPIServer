@@ -9,8 +9,8 @@ namespace WebAPIServer.Controllers;
 [Route("[controller]")]
 public class LoginController : ControllerBase
 {
-    private readonly IAccountDB _accountDB;
-    private readonly IMemoryDB _memoryDB;
+    readonly IAccountDB _accountDB;
+    readonly IMemoryDB _memoryDB;
 
     public LoginController(IAccountDB accountDB, IMemoryDB memoryDB)
     {
