@@ -8,7 +8,7 @@ namespace WebAPIServer.Controllers;
 [Route("[controller]")]
 public class CreateAccountController : ControllerBase
 {
-    private readonly IAccountDB _accountDB;
+    readonly IAccountDB _accountDB;
 
     public CreateAccountController(IAccountDB accountDB)
     {
@@ -21,13 +21,8 @@ public class CreateAccountController : ControllerBase
         var response = new CreateAccountResponse();
 
         var errorCode = await _accountDB.CreateAccount(request.ID, request.Password);
-        if (errorCode != ErrorCode.None)
-        {
-            response.Result = errorCode;
-            return response;
-        }
 
-
+        response.Result = errorCode;
         return response;
     }
 }

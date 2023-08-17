@@ -16,7 +16,10 @@ public enum ErrorCode : UInt16
     LoginFailRegisterRedis = 2006,
     LoginFailRegisterRedisException = 2007,
 
-    // Redis 3000 ~
+    // Redis(Memory) 3000 ~
     VerifyFailException = 3000,
     NoExistingAuthToken = 3001,
+
+    // Item 4000 ~
+    InsertItemFailException = 4000,
 }
