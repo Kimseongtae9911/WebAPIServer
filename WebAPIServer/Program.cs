@@ -9,6 +9,7 @@ builder.Services.Configure<DbConfig>(configuration.GetSection(nameof(DbConfig)))
 
 builder.Services.AddTransient<IAccountDB, AccountDB>();
 builder.Services.AddTransient<IItemDB, ItemDB>();
+builder.Services.AddTransient<IMailboxDB, MailboxDB>();
 builder.Services.AddSingleton<IMemoryDB, MemoryDB>();
 builder.Services.AddControllers();
 

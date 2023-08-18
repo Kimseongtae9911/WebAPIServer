@@ -8,7 +8,7 @@ public class DbConfig
 {
     public string AccountDB { get; set; } = string.Empty;
     public string ItemDB { get; set; } = string.Empty;
-
+    public string MailboxDB { get; set; } = string.Empty;
     public string MemoryDB { get; set; } = string.Empty;
 }
 

@@ -22,4 +22,7 @@ public enum ErrorCode : UInt16
 
     // Item 4000 ~
     InsertItemFailException = 4000,
+
+    // Mailbox 5000 ~
+    LoadMailboxException = 5000,
 }
