@@ -31,6 +31,7 @@ public class MemoryDB : IMemoryDB
             return ErrorCode.LoginFailRegisterRedis;
         }
 
+        Console.WriteLine($"[RegisterUser] ID: {id}, AuthToken: {authToken}");
         return ErrorCode.None;
     }
 

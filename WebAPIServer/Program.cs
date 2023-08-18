@@ -1,3 +1,4 @@
+using WebAPIServer.Middleware;
 using WebAPIServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +15,8 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 app.UseRouting();
+
+app.UseMiddleware<VerifyUserMiddleware>();
 
 app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 

@@ -32,7 +32,7 @@ public class LoginController : ControllerBase
 
         var authToken = Security.GetSaltString();
 
-        errorCode = await _memoryDB.RegisterUser(authToken, request.Password);
+        errorCode = await _memoryDB.RegisterUser(request.ID, authToken);
         if (errorCode != ErrorCode.None)
         {
             response.Result = errorCode;
