@@ -15,6 +15,8 @@ builder.Services.AddControllers();
 
 var app = builder.Build();
 
+app.UseExceptionHandler();
+
 app.UseRouting();
 
 app.UseMiddleware<VerifyUserMiddleware>();
