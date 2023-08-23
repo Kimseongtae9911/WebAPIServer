@@ -1,6 +1,6 @@
 ﻿using System.Collections;
 
-namespace WebAPIServer.Services;
+namespace WebAPIServer.Services.Interfaces;
 
 public interface IMailboxDB
 {

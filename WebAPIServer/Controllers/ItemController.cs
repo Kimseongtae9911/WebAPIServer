@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.ModelReqRes;
-using WebAPIServer.Services;
+using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Controllers;
 

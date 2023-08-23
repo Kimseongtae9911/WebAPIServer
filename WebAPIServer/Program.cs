@@ -1,5 +1,6 @@
 using WebAPIServer.Middleware;
 using WebAPIServer.Services;
+using WebAPIServer.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,8 +15,6 @@ builder.Services.AddSingleton<IMemoryDB, MemoryDB>();
 builder.Services.AddControllers();
 
 var app = builder.Build();
-
-app.UseExceptionHandler();
 
 app.UseRouting();
 

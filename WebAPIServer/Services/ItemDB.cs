@@ -3,6 +3,12 @@ using System.Data;
 using SqlKata.Execution;
 using MySqlConnector;
 using Microsoft.Extensions.Options;
+using Dapper;
+using SqlKata;
+using System.Collections;
+using WebAPIServer.Services.Interfaces;
+
+namespace WebAPIServer.Services;
 
 public class DbConfig
 {
@@ -12,71 +18,77 @@ public class DbConfig
     public string MemoryDB { get; set; } = string.Empty;
 }
 
-namespace WebAPIServer.Services
+public class ItemDB : IItemDB
 {
-    public class ItemDB : IItemDB
+    readonly IOptions<DbConfig> _dbConfig;
+
+    IDbConnection _dbConnection;
+    SqlKata.Compilers.MySqlCompiler _compiler;
+    QueryFactory _queryFactory;
+
+    public ItemDB(IOptions<DbConfig> dbConfig)
     {
-        readonly IOptions<DbConfig> _dbConfig;
+        _dbConfig = dbConfig;
 
-        IDbConnection _dbConnection;
-        SqlKata.Compilers.MySqlCompiler _compiler;
-        QueryFactory _queryFactory;
+        _dbConnection = new MySqlConnection(_dbConfig.Value.ItemDB);
+        _dbConnection.Open();
 
-        public ItemDB(IOptions<DbConfig> dbConfig)
+        _compiler = new SqlKata.Compilers.MySqlCompiler();
+        _queryFactory = new QueryFactory(_dbConnection, _compiler);
+    }
+    ~ItemDB()
+    {
+        Dispose();
+    }
+    public void Dispose()
+    {
+        _dbConnection.Close();
+    }
+
+    public async Task<ErrorCode> InsertItem(string id, Int16 itemCode)
+    {
+        try
         {
-            _dbConfig = dbConfig;
+            var compiledQuery = _compiler.Compile(_queryFactory.Query("item").AsInsert(new { ID = id, ItemCode = itemCode, Count = 1 }));
+            var onDuplicatedKeySql = compiledQuery.Sql + " ON DUPLICATE KEY UPDATE Count=Count+1";
 
-            _dbConnection = new MySqlConnection(_dbConfig.Value.ItemDB);
-            _dbConnection.Open();
+            await _dbConnection.ExecuteAsync(onDuplicatedKeySql, compiledQuery.NamedBindings);
 
-            _compiler = new SqlKata.Compilers.MySqlCompiler();
-            _queryFactory = new QueryFactory(_dbConnection, _compiler);
+            Console.WriteLine($"[InsertItem] ID: {id}, ItemCode: {itemCode}");
+            return ErrorCode.None;
         }
-        ~ItemDB()
+        catch (Exception e)
         {
-            Dispose();
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[ItemDB.InsertItem] ErrorCode: {nameof(ErrorCode.InsertItemFailException)}, ID: {id}, ItemCode: {itemCode}");
+            return ErrorCode.InsertItemFailException;
         }
-        public void Dispose()
-        {
-            _dbConnection.Close();
-        }
+    }
 
-        public async Task<ErrorCode> InsertItem(string id, Int16 itemCode)
+    public async Task<Tuple<ErrorCode, List<Tuple<Int16, Int16>>>> LoadItem(string id)
+    {
+        var list = new List<Tuple<Int16, Int16>>();
+
+        try
         {
-            try
+            var items = await _queryFactory.Query("item")
+                       .Where("ID", id)
+                       .GetAsync();
+
+            foreach (var item in items)
             {
-                var existingRecord = await _queryFactory.Query("item")
-                    .Where("ID", id)
-                    .Where("ItemCode", itemCode)
-                    .FirstOrDefaultAsync();
-
-                if (existingRecord != null)
-                {
-                    await _queryFactory.Query("item")
-                        .Where("ID", id)
-                        .Where("ItemCode", itemCode)
-                        .IncrementAsync("Count", 1);
-                }
-                else
-                {
-                    await _queryFactory.Query("item").InsertAsync(new
-                    {
-                        id = id,
-                        itemCode = itemCode,
-                        count = 1
-                    });
-                }
-                Console.WriteLine($"[InsertItem] ID: {id}, ItemCode: {itemCode}");
-                return ErrorCode.None;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Error Msg: " + e.Message + ", ");
-                Console.WriteLine($"[ItemDB.InsertItem] ErrorCode: {nameof(ErrorCode.InsertItemFailException)}, ID: {id}, ItemCode: {itemCode}");
-                return ErrorCode.InsertItemFailException;
+                list.Add(new (item.ItemCode, item.Count));
             }
 
-            
+            Console.WriteLine($"[LoadItem] ID: {id}");
+            return new(ErrorCode.None, list);
         }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[ItemDB.LoadItem] ErrorCode: {nameof(ErrorCode.LoadMailboxException)}, ID: {id}");
+            return new (ErrorCode.LoadMailboxException, list);
+        }
+
     }
 }

@@ -2,13 +2,8 @@
 
 namespace WebAPIServer.ModelReqRes;
 
-public class LoginRequest
+public class LoginRequest : BaseRequest
 {
-    [Required]
-    [MinLength(1, ErrorMessage = "ID CANNOT BE EMPTY")]
-    [StringLength(Constants.IdLength, ErrorMessage = "ID IS TOO LONG")]
-    public string ID { get; set; } = string.Empty;
-
     [Required]
     [MinLength(1, ErrorMessage = "PASSWORD CANNOT BE EMPTY")]
     [StringLength(Constants.PasswordLength, ErrorMessage = "PASSWORD IS TOO LONG")]
@@ -19,4 +14,5 @@ public class LoginRequest
 public class LoginResponse : BaseResponse
 {
     public string AuthToken { get; set; } = string.Empty;
+    public List<Tuple<Int16, Int16>> Items { get; set; } = new List<Tuple<Int16, Int16>>();
 }

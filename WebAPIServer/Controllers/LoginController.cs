@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using WebAPIServer.ModelReqRes;
 using WebAPIServer.Services;
-using WebAPIServer.Utils;
+using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Controllers;
 
@@ -11,15 +11,17 @@ public class LoginController : ControllerBase
 {
     readonly IAccountDB _accountDB;
     readonly IMemoryDB _memoryDB;
+    readonly IItemDB _itemDB;
 
-    public LoginController(IAccountDB accountDB, IMemoryDB memoryDB)
+    public LoginController(IAccountDB accountDB, IItemDB itemDB, IMemoryDB memoryDB)
     {
         _accountDB = accountDB;
+        _itemDB = itemDB;
         _memoryDB = memoryDB;
     }
 
     [HttpPost]
-    public async Task<LoginResponse> Post(LoginRequest request)
+    public async Task<LoginResponse> Login(LoginRequest request)
     {
         var response = new LoginResponse();
 
@@ -37,6 +39,18 @@ public class LoginController : ControllerBase
         {
             response.Result = errorCode;
             return response;
+        }
+
+        (errorCode, var list) = await _itemDB.LoadItem(request.ID);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
+        foreach ((var itemCode, var count) in list)
+        {
+            response.Items.Add(new(itemCode, count));
         }
 
         response.AuthToken = authToken;

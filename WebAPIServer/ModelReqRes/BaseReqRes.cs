@@ -1,7 +1,13 @@
-﻿namespace WebAPIServer.ModelReqRes;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace WebAPIServer.ModelReqRes;
 
 public class BaseRequest
 {
+    [Required]
+    [MinLength(1, ErrorMessage = "ID CANNOT BE EMPTY")]
+    [StringLength(Constants.IdLength, ErrorMessage = "ID IS TOO LONG")]
+    public string ID { get; set; } = string.Empty;
     public string AuthToken { get; set; } = string.Empty;
 }
 public class BaseResponse

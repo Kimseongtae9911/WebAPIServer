@@ -1,4 +1,4 @@
-﻿namespace WebAPIServer.Services;
+﻿namespace WebAPIServer.Services.Interfaces;
 
 public interface IMemoryDB
 {

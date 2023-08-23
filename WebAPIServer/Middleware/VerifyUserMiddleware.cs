@@ -1,6 +1,6 @@
 ﻿using System.Text;
 using System.Text.Json.Nodes;
-using WebAPIServer.Services;
+using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Middleware;
 
@@ -25,17 +25,10 @@ public class VerifyUserMiddleware : IMiddleware
 
         try
         {
-            string requestBody;
-            using (StreamReader reader = new StreamReader(context.Request.Body))
-            {
-                requestBody = await reader.ReadToEndAsync();
-            }
-            var copiedRequestBody = requestBody;
+            var authToken = context.Request.Form["AuthToken"];
+            var userID = context.Request.Form["ID"];
 
-            var json = JsonObject.Parse(copiedRequestBody);
-            string authToken = json["AuthToken"].ToString();
-
-            var result = await _memoryDB.GetAuthToken(json["ID"].ToString()); // Update this part according to your JSON structure
+            var result = await _memoryDB.GetAuthToken(userID);
             if (result.Item1 != ErrorCode.None)
             {
                 Console.Write($"[VerifyUserMiddleware]: No Client Info In Redis");                
@@ -43,11 +36,10 @@ public class VerifyUserMiddleware : IMiddleware
             }
             else if (result.Item2 == authToken)
             {
-                context.Request.Body = new MemoryStream(Encoding.UTF8.GetBytes(requestBody));
-
                 await _next(context);
                 return;
             }
+
             Console.WriteLine($"[VerifyUserMiddleware]: AuthToken Not Valid");
         }
         catch (Exception e)

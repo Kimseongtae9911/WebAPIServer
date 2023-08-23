@@ -3,8 +3,8 @@ using MySqlConnector;
 using SqlKata.Execution;
 using System.Data;
 using System.Security.Principal;
-using WebAPIServer.Utils;
 using WebAPIServer.ModelDb;
+using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Services;
 

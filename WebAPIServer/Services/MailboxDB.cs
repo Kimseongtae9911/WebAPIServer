@@ -3,6 +3,7 @@ using MySqlConnector;
 using SqlKata.Execution;
 using System.Collections;
 using System.Data;
+using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Services;
 
@@ -18,7 +19,7 @@ public class MailboxDB : IMailboxDB
     {
         _dbConfig = dbConfig;
 
-        _dbConnection = new MySqlConnection(_dbConfig.Value.AccountDB);
+        _dbConnection = new MySqlConnection(_dbConfig.Value.MailboxDB);
         _dbConnection.Open();
 
         _compiler = new SqlKata.Compilers.MySqlCompiler();

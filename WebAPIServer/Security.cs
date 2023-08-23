@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 
-namespace WebAPIServer.Utils;
+namespace WebAPIServer;
 
 public class Security
 {
@@ -21,12 +21,12 @@ public class Security
 
     public static string GetSaltString()
     {
-        var bytes = new Byte[64];
+        var bytes = new byte[64];
         using (var random = RandomNumberGenerator.Create())
         {
             random.GetBytes(bytes);
         }
 
-        return new String(bytes.Select(x => SaltCharacter[x % SaltCharacter.Length]).ToArray());
+        return new string(bytes.Select(x => SaltCharacter[x % SaltCharacter.Length]).ToArray());
     }
-}   
+}
