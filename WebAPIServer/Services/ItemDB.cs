@@ -77,7 +77,7 @@ public class ItemDB : IItemDB
 
             foreach (var item in items)
             {
-                list.Add(new (item.ItemCode, item.Count));
+                list.Add(new ((Int16)item.ItemCode, (Int16)item.Count));
             }
 
             Console.WriteLine($"[LoadItem] ID: {id}");
@@ -86,8 +86,8 @@ public class ItemDB : IItemDB
         catch (Exception e)
         {
             Console.WriteLine("Error Msg: " + e.Message + ", ");
-            Console.WriteLine($"[ItemDB.LoadItem] ErrorCode: {nameof(ErrorCode.LoadMailboxException)}, ID: {id}");
-            return new (ErrorCode.LoadMailboxException, list);
+            Console.WriteLine($"[ItemDB.LoadItem] ErrorCode: {nameof(ErrorCode.LoadItemFailException)}, ID: {id}");
+            return new (ErrorCode.LoadItemFailException, list);
         }
 
     }

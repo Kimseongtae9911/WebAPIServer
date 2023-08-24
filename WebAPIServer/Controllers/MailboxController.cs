@@ -27,6 +27,60 @@ public class MailboxController
 
         return response;
     }
+
+    [HttpPost("send")]
+    public async Task<SendMailResponse> SendMail(SendMailRequest request)
+    {
+        var response = new SendMailResponse();
+
+
+        return response;
+    }
+
+    [HttpPost("recv")]
+    public async Task<RecvMailResponse> RecvMail(RecvMailRequest request)
+    {
+        var response = new RecvMailResponse();
+
+
+        return response;
+    }
+
+    [HttpPost("recvAll")]
+    public async Task<RecvAllMailResponse> RecvAllMail(RecvAllMailRequest request)
+    {
+        var response = new RecvAllMailResponse();
+
+
+        return response;
+    }
+
+    [HttpPost("delete")]
+    public async Task<DeleteRecvMailResponse> DeleteRecvMail(DeleteRecvMailRequest request)
+    {
+        var response = new DeleteRecvMailResponse();
+
+
+        return response;
+    }
+
+    [HttpPost("see")]
+    public async Task<DeleteRecvMailResponse> SeeUnRecvMail(DeleteRecvMailRequest request)
+    {
+        var response = new DeleteRecvMailResponse();
+
+
+        return response;
+    }
+
+    [HttpPost("organize")]
+    public async Task<DeleteRecvMailResponse> OrganizeMail(DeleteRecvMailRequest request)
+    {
+        var response = new DeleteRecvMailResponse();
+
+
+        return response;
+    }
 }
 
 

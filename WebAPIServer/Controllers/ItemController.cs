@@ -16,7 +16,7 @@ public class ItemController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<InsertItemResponse> Post(InsertItemRequest request)
+    public async Task<InsertItemResponse> InsertItem(InsertItemRequest request)
     {
         var response = new InsertItemResponse();
 
