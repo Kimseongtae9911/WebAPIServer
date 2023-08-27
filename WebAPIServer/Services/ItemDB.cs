@@ -36,10 +36,7 @@ public class ItemDB : IItemDB
         _compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new QueryFactory(_dbConnection, _compiler);
     }
-    ~ItemDB()
-    {
-        Dispose();
-    }
+
     public void Dispose()
     {
         _dbConnection.Close();

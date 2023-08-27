@@ -26,4 +26,9 @@ public enum ErrorCode : UInt16
 
     // Mailbox 5000 ~
     LoadMailboxException = 5000,
+    SendMailException = 5001,
+    RecvMailException = 5002,
+    RecvAllMailException = 5003,
+    DeleteRecvMailException = 5004,
+    SeeUnRecvMailException = 5005,
 }

@@ -1,6 +1,6 @@
-﻿namespace WebAPIServer.ModelDb;
+﻿namespace WebAPIServer.TableModel;
 
-public class TableAccount
+public class UserAccount
 {
     private string ID { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;

@@ -23,7 +23,7 @@ public class MailboxController
         (var errorCode, var mails) = await _mailboxDB.LoadMailbox(request.ID);
 
         response.Result = errorCode;
-        response.mails = mails;
+        response.Mails = mails;
 
         return response;
     }
@@ -33,6 +33,7 @@ public class MailboxController
     {
         var response = new SendMailResponse();
 
+        response.Result = await _mailboxDB.SendMail(request.Sender, request.Receiver, request.MailType, request.MailDetail);
 
         return response;
     }
@@ -42,6 +43,12 @@ public class MailboxController
     {
         var response = new RecvMailResponse();
 
+        (var errorCode, var mail) = await _mailboxDB.RecvMail(request.ID, request.MailNum);
+
+        //Logic for received mail item process
+
+        response.Result = errorCode;
+        response.Mail = mail;
 
         return response;
     }
@@ -51,6 +58,12 @@ public class MailboxController
     {
         var response = new RecvAllMailResponse();
 
+        (var errorCode, var mails) = await _mailboxDB.RecvAllMail(request.ID);
+
+        //Logic for received mail item process
+
+        response.Result = errorCode;
+        response.Mails = mails;
 
         return response;
     }
@@ -60,28 +73,37 @@ public class MailboxController
     {
         var response = new DeleteRecvMailResponse();
 
+        (var errorCode, var mails) = await _mailboxDB.DeleteRecvMail(request.ID);
+
+        response.Result = errorCode;
+        response.Mails = mails;
 
         return response;
     }
 
     [HttpPost("see")]
-    public async Task<DeleteRecvMailResponse> SeeUnRecvMail(DeleteRecvMailRequest request)
+    public async Task<SeeUnRecvMailResponse> SeeUnRecvMail(SeeUnRecvMailRequest request)
     {
-        var response = new DeleteRecvMailResponse();
+        var response = new SeeUnRecvMailResponse();
 
+        (var errorCode, var mails) = await _mailboxDB.SeeUnRecvMail(request.ID);
+
+        response.Result = errorCode;
+        response.Mails = mails;
 
         return response;
     }
 
     [HttpPost("organize")]
-    public async Task<DeleteRecvMailResponse> OrganizeMail(DeleteRecvMailRequest request)
+    public async Task<OrganizeMailResponse> OrganizeMail(OrganizeMailRequest request)
     {
-        var response = new DeleteRecvMailResponse();
+        var response = new OrganizeMailResponse();
 
+        (var errorCode, var mails) = await _mailboxDB.OrganizeMail(request.ID, request.IsAscending);
+
+        response.Result = errorCode;
+        response.Mails = mails;
 
         return response;
     }
 }
-
-
-//우편함 로딩, 받기, 받기 완료 삭제, 모두 받기, 미수령만 보기, 정렬

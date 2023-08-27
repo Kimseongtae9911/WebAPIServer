@@ -3,7 +3,7 @@ using MySqlConnector;
 using SqlKata.Execution;
 using System.Data;
 using System.Security.Principal;
-using WebAPIServer.ModelDb;
+using WebAPIServer.TableModel;
 using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Services;
@@ -26,10 +26,7 @@ public class AccountDB : IAccountDB
         _compiler = new SqlKata.Compilers.MySqlCompiler();
         _queryFactory = new QueryFactory(_dbConnection, _compiler);
     }
-    ~AccountDB()
-    {
-        Dispose();
-    }
+
     public void Dispose()
     {
         _dbConnection.Close();
@@ -71,7 +68,7 @@ public class AccountDB : IAccountDB
         {
             var account = await _queryFactory.Query("account")
                 .Where("ID", id)
-                .FirstOrDefaultAsync<TableAccount>();
+                .FirstOrDefaultAsync<UserAccount>();
 
             if(account == null)
             {

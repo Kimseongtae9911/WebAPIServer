@@ -21,7 +21,7 @@ public class MemoryDB : IMemoryDB
     {
         try
         {
-            var redis = new RedisString<string>(_redisConnection, id, TimeSpan.FromDays(Constants.AuthTokenDay));
+            var redis = new RedisString<string>(_redisConnection, id, TimeSpan.FromDays(AccountConstants.AuthTokenDay));
 
             await redis.SetAsync(authToken);
         }
