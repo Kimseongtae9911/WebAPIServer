@@ -11,4 +11,5 @@ public interface IMailboxDB
     public Task<Tuple<ErrorCode, List<MailboxInfo>>> DeleteRecvMail(string id);
     public Task<Tuple<ErrorCode, List<MailboxInfo>>> SeeUnRecvMail(string id);
     public Task<Tuple<ErrorCode, List<MailboxInfo>>> OrganizeMail(string id, bool isAscending);
+    public Task<ErrorCode> UpdateMailbox(string id);
 }

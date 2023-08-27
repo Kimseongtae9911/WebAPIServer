@@ -126,4 +126,16 @@ public class MailboxController
 
         return response;
     }
+
+    [HttpPost("update")]
+    public async Task<BaseResponse> UpdateMailbox(BaseRequest request)
+    {
+        var response = new BaseResponse();
+
+        var errorCode = await _mailboxDB.UpdateMailbox(request.ID);
+
+        response.Result = errorCode;
+
+        return response;
+    }
 }

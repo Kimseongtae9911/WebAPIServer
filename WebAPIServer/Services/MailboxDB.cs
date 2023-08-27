@@ -212,4 +212,22 @@ public class MailboxDB : IMailboxDB
             } 
         }
     }
+    public async Task<ErrorCode> UpdateMailbox(string id)
+    {
+        try
+        {
+            await _queryFactory.Query("mailbox")
+                .Where("IsDeleted", true)
+                .DeleteAsync();
+
+            Console.WriteLine($"[UpdateMailbox] ID: {id}");
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error Msg: " + ex.Message + ", ");
+            Console.WriteLine($"[MailboxDB.UpdateMailbox] ErrorCode: {nameof(ErrorCode.UpdateMailboxException)}, ID: {id}");
+            return ErrorCode.UpdateMailboxException;
+        }
+    }
 }
