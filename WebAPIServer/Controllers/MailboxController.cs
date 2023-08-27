@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WebAPIServer.ModelReqRes;
+using WebAPIServer.Enums;
+using WebAPIServer.HttpReqRes;
 using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Controllers;
@@ -9,10 +10,12 @@ namespace WebAPIServer.Controllers;
 public class MailboxController
 {
     readonly IMailboxDB _mailboxDB;
+    readonly IItemDB _itemDB;
 
-    public MailboxController(IMailboxDB mailboxDB)
+    public MailboxController(IMailboxDB mailboxDB, IItemDB itemDB)
     {
         _mailboxDB = mailboxDB;
+        _itemDB = itemDB;
     }
 
     [HttpPost("load")]
@@ -33,7 +36,7 @@ public class MailboxController
     {
         var response = new SendMailResponse();
 
-        response.Result = await _mailboxDB.SendMail(request.Sender, request.Receiver, request.MailType, request.MailDetail);
+        response.Result = await _mailboxDB.SendMail(request.ID, request.Receiver, request.MailType, request.MailDetail);
 
         return response;
     }
@@ -43,9 +46,16 @@ public class MailboxController
     {
         var response = new RecvMailResponse();
 
-        (var errorCode, var mail) = await _mailboxDB.RecvMail(request.ID, request.MailNum);
+        (var errorCode, var mail) = await _mailboxDB.RecvMail(request.ID, request.MailboxID);
 
-        //Logic for received mail item process
+        switch((MailTypes)mail.MailType)
+        {
+            case MailTypes.Item:
+                errorCode = await _itemDB.InsertItem(request.ID, mail.MailDetail);
+                break;
+            default:
+                break;
+        }
 
         response.Result = errorCode;
         response.Mail = mail;
@@ -60,7 +70,17 @@ public class MailboxController
 
         (var errorCode, var mails) = await _mailboxDB.RecvAllMail(request.ID);
 
-        //Logic for received mail item process
+        foreach (var mail in mails)
+        {
+            switch ((MailTypes)mail.MailType)
+            {
+                case MailTypes.Item:
+                    errorCode = await _itemDB.InsertItem(request.ID, mail.MailDetail);
+                    break;
+                default:
+                    break;
+            }
+        }
 
         response.Result = errorCode;
         response.Mails = mails;

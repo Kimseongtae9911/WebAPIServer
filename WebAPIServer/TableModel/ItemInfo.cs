@@ -2,7 +2,7 @@
 
 public class ItemInfo
 {
-    public ItemInfo(Int16 type, Int16 detail) { this.ItemType = type; this.ItemDetail = detail; }
-    public Int16 ItemType;
-    public Int16 ItemDetail;
+    public ItemInfo(Int16 code, Int16 count) { this.ItemCode = code; this.ItemCount = count; }
+    public Int16 ItemCode;
+    public Int16 ItemCount;
 }

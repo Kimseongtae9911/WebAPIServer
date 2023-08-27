@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WebAPIServer.ModelReqRes;
+using WebAPIServer.HttpReqRes;
 using WebAPIServer.Services;
 using WebAPIServer.Services.Interfaces;
 

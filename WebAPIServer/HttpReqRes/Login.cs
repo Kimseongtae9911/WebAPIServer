@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using WebAPIServer.Constants;
+using WebAPIServer.TableModel;
 
-namespace WebAPIServer.ModelReqRes;
+namespace WebAPIServer.HttpReqRes;
 
 public class LoginRequest : BaseRequest
 {
@@ -14,5 +16,5 @@ public class LoginRequest : BaseRequest
 public class LoginResponse : BaseResponse
 {
     public string AuthToken { get; set; } = string.Empty;
-    public List<Tuple<Int16, Int16>> Items { get; set; } = new List<Tuple<Int16, Int16>>();
+    public List<ItemInfo> Items { get; set; } = new List<ItemInfo>();
 }

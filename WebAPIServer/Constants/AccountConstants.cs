@@ -1,4 +1,4 @@
-﻿namespace WebAPIServer;
+﻿namespace WebAPIServer.Constants;
 
 public class AccountConstants
 {

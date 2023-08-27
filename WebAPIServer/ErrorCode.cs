@@ -31,4 +31,5 @@ public enum ErrorCode : UInt16
     RecvAllMailException = 5003,
     DeleteRecvMailException = 5004,
     SeeUnRecvMailException = 5005,
+    OrganizeMailException = 5006
 }

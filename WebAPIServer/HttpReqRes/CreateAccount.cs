@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using WebAPIServer.Constants;
 
-namespace WebAPIServer.ModelReqRes;
+namespace WebAPIServer.HttpReqRes;
 
 public class CreateAccountRequest : BaseRequest
 {   

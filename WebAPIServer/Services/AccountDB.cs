@@ -39,12 +39,13 @@ public class AccountDB : IAccountDB
             var saltValue = Security.GetSaltString();
             var hashedPassword = Security.HashPassword(saltValue, password);
 
-            var count = await _queryFactory.Query("account").InsertAsync(new
-            {
-                ID = id,
-                SaltValue = saltValue,
-                Password = hashedPassword
-            });
+            var count = await _queryFactory.Query("account")
+                .InsertAsync(new
+                {
+                    ID = id,
+                    SaltValue = saltValue,
+                    Password = hashedPassword
+                });
 
             if (count != 1)
             {

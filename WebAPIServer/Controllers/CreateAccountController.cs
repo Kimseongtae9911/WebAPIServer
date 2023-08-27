@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WebAPIServer.ModelReqRes;
+using WebAPIServer.HttpReqRes;
 using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Controllers;
@@ -16,7 +16,7 @@ public class CreateAccountController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<CreateAccountResponse> Post(CreateAccountRequest request)
+    public async Task<CreateAccountResponse> CreateAccount(CreateAccountRequest request)
     {
         var response = new CreateAccountResponse();
 

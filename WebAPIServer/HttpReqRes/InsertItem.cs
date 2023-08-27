@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace WebAPIServer.ModelReqRes;
+namespace WebAPIServer.HttpReqRes;
 
 public class InsertItemRequest : BaseRequest
 {
