@@ -1,25 +1,26 @@
 # 목차
 1. 이론
-   1. [C#](#C#)
+   1. [C#](#C)
       - [컨테이너(컬렉션)](#컨테이너컬렉션)
-      - [Async, Await](#Async,%20Await)
-   2. [.Net Core](#.Net-Core)
+      - [Async, Await](#Async-Await)
+   2. [.Net Core](#Net-Core)
       - [Program](#Program)
       - [미들웨어](#미들웨어)
       - [라우팅](#라우팅)
-      - [의존성 주입](#의존성-주입(Dependency-Injection))
-    3. [Redis](#Redis)
-       - [Redis의 특징](#Redis의-특징)
-       - [Redis 명령어](#Redis-명령어)
-       - [CloudStructures](#CloudStructures)
-    4. [HTTP](#HTTP)
-       - [대표적인 HTTP 메소드](#대표적인-HTTP-메소드)
+      - [의존성 주입](#의존성-주입Dependency-Injection)
+   3. [Redis](#Redis)
+      - [Redis의 특징](#Redis의-특징)
+      - [Redis 명령어](#Redis-명령어)
+      - [CloudStructures](#CloudStructures)
+   4. [HTTP](#HTTP)
+      - [대표적인 HTTP 메소드](#대표적인-HTTP-메소드)
 2. 프로그래밍
    1. [계정 생성](#계정-생성)
    2. [로그인](#로그인)
    3. [게임 데이터 로딩](#게임-데이터-로딩)
    4. [우편함](#우편함)
 
+---
 # C#
     - 마이크로소프트에서 개발한 .Net Framewor 기반 범용 목적의 다중 패러다임 프로그래밍 언어
 
@@ -43,6 +44,7 @@
     I/O작업과 같이 시간이 오래 걸리는 작업을 수행하게 되면 대기 시간이 길어진다.
     이때, 비동기로 수행하여 I/O작업이 수행되는 동안 스레드가 다른 작업을 수행하여 성능을 높일 수 있다
 
+---
 # .Net Core
     - 웹 앱, 모바일 앱, 데스크톱 프로그램, 게임 프로그램, 사물인터넷 프로그램 등을 만들기 위한 오픈소스 크로스 플랫폼 개발 환경
 
@@ -100,6 +102,7 @@
 
 *수명주기를 선택할 때는 thread-safe동작 여부, 성능(메모리)에 따라 선택한다
 
+---
 # Redis
     -데이터를 메모리에 저장하고 조회하기 위한 고성능 key-value 저장소이다.
 
@@ -195,6 +198,7 @@
 
 - 각 타입별 사용 방법은 다음 깃허브 링크에 있다 (https://github.com/xin9le/CloudStructures/tree/master/src/CloudStructures/Structures)
 
+---
 # HTTP
     -웹에서 데이터를 주고받기 위해 사용되는 통신 프로토콜
     -요청은 URL을 통해 특정 웹 페이지나 리소스를 지정하고, 요청 메소드(GET, POST, PUT, DELETE 등)를 사용하여 원하는 동작을 수행한다
