@@ -14,11 +14,23 @@
       - [CloudStructures](#CloudStructures)
    4. [HTTP](#HTTP)
       - [대표적인 HTTP 메소드](#대표적인-HTTP-메소드)
-2. 프로그래밍
-   1. [계정 생성](#계정-생성)
-   2. [로그인](#로그인)
-   3. [게임 데이터 로딩](#게임-데이터-로딩)
+2. [프로그래밍](#프로그래밍)
+   1. [컨트롤러 공통](#컨트롤러-공통)
+   2. [계정 생성](#계정-생성)
+   3. [로그인 및 게임 데이터 로딩](#로그인-및-게임-데이터-로딩)
+      - [로그인](#로그인)
+      - [인증토큰 등록](#인증토큰-등록)
+      - [게임 데이터 로딩](#게임-데이터-로딩)
    4. [우편함](#우편함)
+      - [우편함 로딩](#우편함-로딩)
+      - [메일 전송](#메일-전송)
+      - [메일 받기](#메일-받기)
+      - [모든 메일 받기](#모든-메일-받기)
+      - [받은 메일 삭제](#받은-메일-삭제)
+      - [안읽은 메일만 보기](#안읽은-메일만-보기)
+      - [메일 정렬](#메일-정렬)
+      - [우편함 업데이트](#우편함-업데이트)
+      - [아이템 등록](#아이템-등록)
 
 ---
 # C#
@@ -224,3 +236,743 @@
    - DELETE 메소드는 서버에서 리소스를 삭제하기 위해 사용
    - 지정한 URL에 해당하는 리소스를 삭제
    - 성공적으로 삭제되었을 때는 200을 반환
+
+---
+# 프로그래밍
+
+---
+## 컨트롤러 공통
+```C#
+[ApiController]
+[Route("[controller]")]
+public class CreateAccountController : ControllerBase
+{
+    readonly IAccountDB _accountDB;
+
+    public CreateAccountController(IAccountDB accountDB)
+    {
+        _accountDB = accountDB;
+    }
+
+    [HttpPost]
+    public async Task<CreateAccountResponse> CreateAccount(CreateAccountRequest request)
+    {
+        var response = new CreateAccountResponse();
+
+        var errorCode = await _accountDB.CreateAccount(request.ID, request.Password);
+
+        response.Result = errorCode;
+        return response;
+    }
+}
+```
+````
+[ApiController]속성은 해당 클래스가 웹 API컨트롤러임을 알려준다
+[Route("[controller]")]속성은 컨트롤러의 라우팅을 정의한다, CreateAccountController는 /CreateAccount로 라우팅된다
+ControllerBase를 상속하여 웹 API컨트롤러의 기본 기능과 컨텍스트를 제공한다
+[HttpPost]속성은 해당 메소드가 HTTP POST요청을 처리함을 나타낸다
+````
+
+---
+## 계정 생성
+```C#
+[ApiController]
+[Route("[controller]")]
+public class CreateAccountController : ControllerBase
+{
+    readonly IAccountDB _accountDB;
+
+    public CreateAccountController(IAccountDB accountDB)
+    {
+        _accountDB = accountDB;
+    }
+
+    [HttpPost]
+    public async Task<CreateAccountResponse> CreateAccount(CreateAccountRequest request)
+    {
+        var response = new CreateAccountResponse();
+
+        var errorCode = await _accountDB.CreateAccount(request.ID, request.Password);
+
+        response.Result = errorCode;
+        return response;
+    }
+}
+```
+````
+_accountDB 인터페이스의 CreateAccount메소드를 호출하고 결과에 따라 CreateAcountResponse객체를 반환한다
+````
+
+```C#
+public async Task<ErrorCode> CreateAccount(string id, string password)
+    {
+        try
+        {
+            var saltValue = Security.GetSaltString();
+            var hashedPassword = Security.HashPassword(saltValue, password);
+
+            var count = await _queryFactory.Query("account")
+                .InsertAsync(new
+                {
+                    ID = id,
+                    SaltValue = saltValue,
+                    Password = hashedPassword
+                });
+
+            if (count != 1)
+            {
+                return ErrorCode.CreateAccountFail;
+            }
+
+            Console.WriteLine($"[CreateAccount] ID: {id}, SaltValue: {saltValue}, Password: {hashedPassword}");
+            return ErrorCode.None;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[AccountDB.CreateAccount] ErrorCode: {nameof(ErrorCode.CreateAccountFailException)}, ID: {id}");
+            return ErrorCode.CreateAccountFailException;
+        }
+    }
+```
+````
+전달받은 아이디와 비밀번호를 account테이블에 등록하는 작업
+
+비밀번호는 바로 바로 저장할 경우, 해킹의 위험이 있으므로 해싱작업을 수행하여 저장
+
+솔트값은 지정한 문자를 조합하여 랜덤하게 생성되며, 해싱함수는 SHA256을 사용
+````
+
+---
+## 로그인 및 게임 데이터 로딩
+```C#
+[ApiController]
+[Route("[controller]")]
+public class LoginController : ControllerBase
+{
+    readonly IAccountDB _accountDB;
+    readonly IMemoryDB _memoryDB;
+    readonly IItemDB _itemDB;
+
+    public LoginController(IAccountDB accountDB, IItemDB itemDB, IMemoryDB memoryDB)
+    {
+        _accountDB = accountDB;
+        _itemDB = itemDB;
+        _memoryDB = memoryDB;
+    }
+
+    [HttpPost]
+    public async Task<LoginResponse> Login(LoginRequest request)
+    {
+        var response = new LoginResponse();
+
+        var errorCode = await _accountDB.Login(request.ID, request.Password);
+        if(errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
+        var authToken = Security.GetSaltString();
+
+        errorCode = await _memoryDB.RegisterUser(request.ID, authToken);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
+        (errorCode, var list) = await _itemDB.LoadItem(request.ID);
+        if (errorCode != ErrorCode.None)
+        {
+            response.Result = errorCode;
+            return response;
+        }
+
+        response.Items = list;
+
+        response.AuthToken = authToken;
+        return response;
+    }
+}
+```
+````
+_accountDB 인터페이스의 Login메소드를 호출하여 로그인 작업을 수행
+
+사용자 인증을 위한 인증토큰 생성 -> 랜덤한 값을 생성
+_memoryDB 인터페이스의 RegisterUser를 호출하여 인증토큰을 Redis에 저장
+
+_itemDB 인터페이스의 LoadItem메소드를 호출하여 게임 데이터 로드
+
+모든 작업이 수행된 이후, 인증토큰과 로딩한 item정보를 반환
+````
+
+### 로그인
+```C#
+public async Task<ErrorCode> Login(string id, string password)
+    {
+        try
+        {
+            var account = await _queryFactory.Query("account")
+                .Where("ID", id)
+                .FirstOrDefaultAsync<UserAccount>();
+
+            if(account.Password == String.Empty)
+            {
+                Console.WriteLine($"[AccountDB.Login] ErrorCode: {nameof(ErrorCode.LoginFailNoAccount)}, ID: {id}");
+                return ErrorCode.LoginFailNoAccount;
+            }
+
+            if(account.Password.Equals(Security.HashPassword(account.SaltValue, password)))
+            {
+                Console.WriteLine($"[Login] ID: {id}, Password: {nameof(account.Password)}");
+                return ErrorCode.None;
+            }
+            else
+            {
+                Console.WriteLine($"[AccountDB.Login] ErrorCode: {nameof(ErrorCode.LoginFailWrongPassword)}, ID: {id}");
+                return ErrorCode.LoginFailWrongPassword;
+            }
+        }
+        catch(Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[AccountDB.Login] ErrorCode: {nameof(ErrorCode.LoginFailException)}, ID: {id}");
+            return ErrorCode.LoginFailException;
+        }
+    }
+```
+````
+FirstOrDefaultAsync<UserAccount>()를 통해 account테이블에서 일치하는 id의 데이터를 가져온다
+이때, 일치하는 데이터가 없을 경우 null(default)를 반환
+
+데이터를 성공적으로 가져온 경우, 전달받은 비밀번호와 데이터의 비밀번호가 일치하는지 확인
+````
+
+### 인증토큰 등록
+```C#
+public async Task<ErrorCode> RegisterUser(string id, string authToken)
+    {
+        try
+        {
+            var redis = new RedisString<string>(_redisConnection, id, _authTokenExpireDay);
+
+            await redis.SetAsync(authToken);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[MemoryDB.RegisterUser] ErrorCode: {nameof(ErrorCode.CreateAccountFailException)}, ID: {id}");
+            return ErrorCode.LoginFailRegisterRedis;
+        }
+
+        Console.WriteLine($"[RegisterUser] ID: {id}, AuthToken: {authToken}");
+        return ErrorCode.None;
+    }
+```
+````
+Redis에 인증토큰을 등록하는 메소드
+RedisString객체를 만들어 _authTokenExpireDay만큼의 기간만큼 Redis에 저장
+
+기간을 따로 지정하지 않고 null을 넣게 되면 무기한으로 저장됨
+````
+
+### 게임 데이터 로딩
+```C#
+public async Task<(ErrorCode, List<ItemInfo>)> LoadItem(string id)
+    {
+        try
+        {
+            var items = await _queryFactory.Query("item")
+                       .Where("ID", id)
+                       .GetAsync<ItemInfo>();
+
+
+            Console.WriteLine($"[LoadItem] ID: {id}");
+            return (ErrorCode.None, items.ToList());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[ItemDB.LoadItem] ErrorCode: {nameof(ErrorCode.LoadItemFailException)}, ID: {id}");
+            return (ErrorCode.LoadItemFailException, new List<ItemInfo>());
+        }
+
+    }
+```
+````
+item테이블로부터 일치하는 ID에 대해 아이템을 ItemInfo형태로 가져온다
+
+ToList메소드를 통해 List<T>로 반환
+````
+
+---
+## 우편함
+```C#
+[ApiController]
+[Route("[controller]")]
+public class MailboxController
+{
+    readonly IMailboxDB _mailboxDB;
+    readonly IItemDB _itemDB;
+
+    public MailboxController(IMailboxDB mailboxDB, IItemDB itemDB)
+    {
+        _mailboxDB = mailboxDB;
+        _itemDB = itemDB;
+    }
+
+    [HttpPost("load")]
+    public async Task<LoadMailboxResponse> LoadMailbox(LoadMailboxRequest request)
+    {
+        var response = new LoadMailboxResponse();
+
+        (var errorCode, var mails) = await _mailboxDB.LoadMailbox(request.ID, request.PageNum);
+
+        response.Result = errorCode;
+        response.Mails = mails;
+
+        return response;
+    }
+
+    [HttpPost("send")]
+    public async Task<SendMailResponse> SendMail(SendMailRequest request)
+    {
+        var response = new SendMailResponse();
+
+        response.Result = await _mailboxDB.SendMail(request.ID, request.Receiver, request.MailType, request.MailDetail);
+
+        return response;
+    }
+
+    [HttpPost("recv")]
+    public async Task<RecvMailResponse> RecvMail(RecvMailRequest request)
+    {
+        var response = new RecvMailResponse();
+
+        (var errorCode, var mail) = await _mailboxDB.RecvMail(request.ID, request.MailboxID);
+
+        switch((MailTypes)mail.MailType)
+        {
+            case MailTypes.Item:
+                errorCode = await _itemDB.InsertItem(request.ID, mail.MailDetail);
+                break;
+            default:
+                break;
+        }
+
+        response.Result = errorCode;
+        response.Mail = mail;
+
+        return response;
+    }
+
+    [HttpPost("recvAll")]
+    public async Task<RecvAllMailResponse> RecvAllMail(RecvAllMailRequest request)
+    {
+        var response = new RecvAllMailResponse();
+
+        (var errorCode, var mails) = await _mailboxDB.RecvAllMail(request.ID);
+
+        foreach (var mail in mails)
+        {
+            switch ((MailTypes)mail.MailType)
+            {
+                case MailTypes.Item:
+                    errorCode = await _itemDB.InsertItem(request.ID, mail.MailDetail);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        response.Result = errorCode;
+        response.Mails = mails;
+
+        return response;
+    }
+
+    [HttpPost("delete")]
+    public async Task<DeleteRecvMailResponse> DeleteRecvMail(DeleteRecvMailRequest request)
+    {
+        var response = new DeleteRecvMailResponse();
+
+        (var errorCode, var mails) = await _mailboxDB.DeleteRecvMail(request.ID);
+
+        response.Result = errorCode;
+        response.Mails = mails;
+
+        return response;
+    }
+
+    [HttpPost("see")]
+    public async Task<SeeUnRecvMailResponse> SeeUnRecvMail(SeeUnRecvMailRequest request)
+    {
+        var response = new SeeUnRecvMailResponse();
+
+        (var errorCode, var mails) = await _mailboxDB.SeeUnRecvMail(request.ID);
+
+        response.Result = errorCode;
+        response.Mails = mails;
+
+        return response;
+    }
+
+    [HttpPost("organize")]
+    public async Task<OrganizeMailResponse> OrganizeMail(OrganizeMailRequest request)
+    {
+        var response = new OrganizeMailResponse();
+
+        (var errorCode, var mails) = await _mailboxDB.OrganizeMail(request.ID, request.PageNum, request.IsAscending);
+
+        response.Result = errorCode;
+        response.Mails = mails;
+
+        return response;
+    }
+
+    [HttpPost("update")]
+    public async Task<BaseResponse> UpdateMailbox(BaseRequest request)
+    {
+        var response = new BaseResponse();
+
+        var errorCode = await _mailboxDB.UpdateMailbox(request.ID);
+
+        response.Result = errorCode;
+
+        return response;
+    }
+}
+```
+````
+우편함은 로딩, 메일 전송, 메일 받기, 전체 메일 받기, 받은 메일 삭제, 안읽은 메일만 보기, 메일 정렬 등 7가지의 기능을 구현
+
+로딩
+- 아이디와 페이지번호를 전달받아 LoadMailbox메소드 수행
+
+메일 전송
+- 아이디, 받을사람, 메일타입, 메일내용을 전달받아 SendMail메소드 수행
+
+메일 받기
+- 아이디 메일번호를 전달받아 RecvMail메소드 수행
+- 받은 메일타입에 따라 메소드 수행
+
+전체 메일 받기
+- 아이디를 전달받아 RecvAllMail메소드 수행
+- 받은 메일타입에 따라 메소드 수행
+
+받은 메일 삭제
+- 아이디를 전달받아 DeleteRecvMail메소드 수행
+
+안읽은 메일만 보기
+- 아이디를 전달받아 SeeUnRecvMail메소드 수행
+
+메일 정렬
+- 아이디, 페이지번호, 정렬방법을 전달받아 OrganizeMail수행
+
+UpdateMailbox
+- 우편함 테이블 업데이트
+````
+
+### 우편함 로딩
+```C#
+public async Task<(ErrorCode, List<MailboxInfo>)> LoadMailbox(string id, Int16 pageNum)
+    {
+        try
+        {
+            var mails = await _queryFactory.Query("mailbox")
+                       .Where("UserID", id)
+                       .Where("IsDeleted", false)
+                       .Limit(_mailNumInPage)
+                       .Offset((pageNum -1) * _mailNumInPage)
+                       .GetAsync<MailboxInfo>();
+
+            Console.WriteLine($"[LoadMailbox] ID: {id}");
+            return new (ErrorCode.None, mails.ToList());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[MailboxDB.LoadMailbox] ErrorCode: {nameof(ErrorCode.LoadMailboxException)}, ID: {id}");
+            return new(ErrorCode.LoadMailboxException, new List<MailboxInfo>());
+        }        
+    }
+```
+````
+Limit을 통해 mailbox테이블에서 읽어오는 데이터 수 제한
+Offset을 통해 페이지번호에 따라 읽어오는 데이터 구분
+MailboxInfo형태로 데이터를 읽어와 List<T>형태로 반환
+````
+
+### 메일 전송
+```C#
+public async Task<ErrorCode> SendMail(string sender, string receiver, Int16 mailType, Int16 mailDetail)
+    {
+        try
+        {
+            var mails = await _queryFactory.Query("mailbox")
+                .InsertAsync(new
+                {
+                    Sender = sender,
+                    UserID = receiver,
+                    MailType = mailType,
+                    MailDetail = mailDetail,
+                    IsReceived = false,
+                    IsDeleted = false,
+                    ReceivedDate = DateTime.Now
+                });
+
+            Console.WriteLine($"[SendMail] Sender: {sender}, Receiver: {receiver}, MailType: {mailType}, MailDetail: {mailDetail}");
+            return ErrorCode.None;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[MailboxDB.SendMail] ErrorCode: {nameof(ErrorCode.SendMailException)}, Sender: {sender}, Receiver: {receiver}, MailType: {mailType}, MailDetail: {mailDetail}");
+            return ErrorCode.SendMailException;
+        }
+    }
+```
+````
+mailbox테이블에 메일을 저장
+DateTime.Now를 통해 전달받은 메일의 시간을 함께 저장한다
+SqlKata를 사용하기 때문에 타입변환은 알아서 해준다
+
+추가로 구현한다면, 메일 만료기한을 정하여 함께 저장
+````
+
+### 메일 받기
+```C#
+public async Task<(ErrorCode, MailboxInfo)> RecvMail(string id, Int16 mailboxID)
+    {
+        try
+        {
+            var recvMail = await _queryFactory.Query("mailbox")
+                .Where("UserID", id)
+                .Where("MailboxID", mailboxID)  
+                .Where("IsReceived", false)
+                .Where("IsDeleted", false)
+                .FirstOrDefaultAsync<MailboxInfo>() ?? new MailboxInfo(-1, -1);
+
+            if(recvMail.MailType == -1 && recvMail.MailDetail == -1)
+            {
+                return new(ErrorCode.NoMatchingMail, new(-1, -1));
+            }
+
+            await _queryFactory.Query("mailbox")
+                .Where("UserID", id)
+                .Where("MailboxID", mailboxID)
+                .UpdateAsync(new { IsReceived = true });
+
+            Console.WriteLine($"[RecvMail] ID: {id}, MailboxID: {mailboxID}, RecvMailType: {recvMail.MailType}, RecvMailDetail: {recvMail.MailDetail}");
+            return new (ErrorCode.None, new ((Int16)recvMail.MailType, (Int16)recvMail.MailDetail));
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[MailboxDB.RecvMail] ErrorCode: {nameof(ErrorCode.RecvMailException)}, ID: {id}, MailNum: {mailboxID}");
+            return new (ErrorCode.RecvMailException, new (-1, -1));
+        }
+    }
+```
+````
+mailbox테이블로부터 아이디와 메일번호에 따라 일치하는 데이터를 MailboxInfo형태로 반환
+만약 일치하는 데이터가 없다면 MailboxInfo의 생성자를 통해 MailboxInfo객체 반환
+
+데이터를 성공적으로 가져왔다면 해당 메일의 IsReceived값을 true로 update한다
+````
+
+### 모든 메일 받기
+```C#
+public async Task<(ErrorCode, List<MailboxInfo>)> RecvAllMail(string id)
+    {
+        try
+        {
+            var recvMails = await _queryFactory.Query("mailbox")
+                .Where("UserID", id)
+                .Where("IsReceived", false)
+                .Where("IsDeleted", false)
+                .GetAsync<MailboxInfo>();
+
+            if (recvMails.Any())
+            {
+                await _queryFactory.Query("mailbox")
+                    .Where("UserID", id)
+                    .Where("IsReceived", false)
+                    .UpdateAsync(new { IsReceived = true });
+
+                Console.WriteLine($"[RecvAllMail] ID: {id}");
+                return new(ErrorCode.None, recvMails.ToList());
+            }
+            else
+            {
+                Console.WriteLine($"[RecvAllMail] No mails to receive for ID: {id}");
+                return new (ErrorCode.None, new List<MailboxInfo>());
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[MailboxDB.RecvAllMail] ErrorCode: {nameof(ErrorCode.RecvAllMailException)}, ID: {id}");
+            return new(ErrorCode.RecvAllMailException, new List<MailboxInfo>());
+        }
+    }
+```
+````
+RecvMail과 동일하게 수행하지만 여러 개의 메일을 수신하므로 List<T>로 데이터를 관리하는 것만 다르다
+여러 개의 데이터를 가져오기 때문에 Any메소드를 통해 가져온 데이터가 유효한지 확인한다
+````
+
+### 받은 메일 삭제
+```C#
+public async Task<(ErrorCode, List<MailboxInfo>)> DeleteRecvMail(string id)
+    {
+        try
+        {
+            await _queryFactory.Query("mailbox")
+                .Where("UserID", id)
+                .Where("IsReceived", true)
+                .Where("IsDeleted", false)
+                .UpdateAsync(new { IsDeleted = true });
+
+            Console.WriteLine($"[DeleteRecvMail] ID: {id}");
+
+            return await LoadMailbox(id, 1);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[MailboxDB.DeleteRecvMail] ErrorCode: {nameof(ErrorCode.DeleteRecvMailException)}, ID: {id}");
+            return new(ErrorCode.DeleteRecvMailException, new List<MailboxInfo>());
+        }
+    }
+```
+````
+mailbox테이블에서 아이디가 일치하는 데이터중 IsReceived가 true인 데이터에 대해서 IsDeleted를 true로 변경한다
+테이블에서 지우는 것이 아니라 플래그를 변경하는 이유는 데이터를 지우는 것은 굉장히 오래 걸리는 작업이기 때문이다
+데이터를 지우는 작업은 UpdateMailbox메소드에서 수행한다
+````
+
+### 안읽은 메일만 보기
+```C#
+public async Task<(ErrorCode, List<MailboxInfo>)> SeeUnRecvMail(string id)
+    {
+        try
+        {
+            var mails = await _queryFactory.Query("mailbox")
+                       .Where("UserID", id)
+                       .Where("IsReceived", false)
+                       .Where("IsDeleted", false)
+                       .Limit(_mailNumInPage)
+                       .GetAsync<MailboxInfo>();
+
+
+            Console.WriteLine($"[SeeUnRecvMail] ID: {id}");
+            return new (ErrorCode.None, mails.ToList());
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[MailboxDB.SeeUnRecvMail] ErrorCode: {nameof(ErrorCode.SeeUnRecvMailException)}, ID: {id}");
+            return new(ErrorCode.SeeUnRecvMailException, new List<MailboxInfo>());
+        }
+    }
+```
+````
+LoadMail메소드와 동일하지만 IsReceived가 false인 데이터만 가져온다
+````
+
+### 메일 정렬
+```C#
+public async Task<(ErrorCode, List<MailboxInfo>)> OrganizeMail(string id, Int16 pageNum, bool isAscending)
+    {
+        if(isAscending)
+        {
+            return await LoadMailbox(id, pageNum);
+        }
+        else
+        {
+            try
+            {
+                var mails = await _queryFactory.Query("mailbox")
+                    .Where("UserID", id)
+                    .Where("IsDeleted", false)
+                    .OrderByDesc("ReceivedDate")
+                    .Limit(_mailNumInPage)
+                    .Offset((pageNum - 1) * _mailNumInPage)
+                    .GetAsync<MailboxInfo>();
+
+                Console.WriteLine($"[OrganizeMail] ID: {id}, IsAscending: {isAscending}");
+                return new(ErrorCode.None, mails.ToList());
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine("Error Msg: " + ex.Message + ", ");
+                Console.WriteLine($"[MailboxDB.OrganizeMail] ErrorCode: {nameof(ErrorCode.OrganizeMailException)}, ID: {id}");
+                return new(ErrorCode.OrganizeMailException, new List<MailboxInfo>());
+            } 
+        }
+    }
+```
+````
+isAscending값에 따라 오름차순, 내림차순으로 메일을 로드한다
+오름차순인 경우는 LoadMailbox와 동일한 작업을 수행한다
+내림차순의 경우에는 OrderByDesc메소드를 활용하여 메일이 등록된 시간을 기준으로 내림차순으로 데이터를 가져온다
+````
+
+### 우편함 업데이트
+```C#
+public async Task<ErrorCode> UpdateMailbox(string id)
+    {
+        try
+        {
+            await _queryFactory.Query("mailbox")
+                .Where("IsDeleted", true)
+                .DeleteAsync();
+
+            Console.WriteLine($"[UpdateMailbox] ID: {id}");
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error Msg: " + ex.Message + ", ");
+            Console.WriteLine($"[MailboxDB.UpdateMailbox] ErrorCode: {nameof(ErrorCode.UpdateMailboxException)}, ID: {id}");
+            return ErrorCode.UpdateMailboxException;
+        }
+    }
+```
+````
+데이터베이스에서 데이터를 지우는 것은 오래 걸리는 작업이다
+따라서 서비스를 하는 도중에 데이터를 지우지 않고 한번에 지운다
+IsDeleted가 true인 값을 모두 지운다
+````
+
+### 아이템 등록
+```C#
+public async Task<ErrorCode> InsertItem(string id, Int16 itemCode)
+    {
+        try
+        {
+            var compiledQuery = _compiler.Compile(_queryFactory.Query("item").AsInsert(new { ID = id, ItemCode = itemCode, Count = 1 }));
+            var onDuplicatedKeySql = compiledQuery.Sql + " ON DUPLICATE KEY UPDATE Count=Count+1";
+
+            await _dbConnection.ExecuteAsync(onDuplicatedKeySql, compiledQuery.NamedBindings);
+
+            Console.WriteLine($"[InsertItem] ID: {id}, ItemCode: {itemCode}");
+            return ErrorCode.None;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message + ", ");
+            Console.WriteLine($"[ItemDB.InsertItem] ErrorCode: {nameof(ErrorCode.InsertItemFailException)}, ID: {id}, ItemCode: {itemCode}");
+            return ErrorCode.InsertItemFailException;
+        }
+    }
+```
+````
+받은 메일타입이 Item에 해당하는 경우, item테이블에 데이터를 넣는데, 그를 수행하는 메소드이다
+SqlKata에는 MySql의 ON DUPLICATE KEY를 지원하는 메소드가 없다
+따라서 SqlKata의 raw쿼리 기능을 활용하여 쿼리문을 만들어 사용한다
+
+중복된 키가 있을 경우 Count값을 증가시키고 없을 경우에는 Count를 1로 하여 테이블에 삽입한다
+````
