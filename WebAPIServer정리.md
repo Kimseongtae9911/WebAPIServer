@@ -1,9 +1,9 @@
 # 목차
 1. 이론
-   1. [C#](C#)
-      - [컨테이너(컬렉션)](컨테이너(컬렉션))
-      - [Async, Await](Async,-Await)
-   2. [.Net Core](.Net-Core)
+   1. [C#](#C#)
+      - [컨테이너(컬렉션)](#컨테이너(컬렉션))
+      - [Async, Await](#Async,-Await)
+   2. [.Net Core](#.Net-Core)
       - [Program](Program)
       - [미들웨어](미들웨어)
       - [라우팅](라우팅)
