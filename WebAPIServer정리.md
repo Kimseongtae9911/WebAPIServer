@@ -1,3 +1,25 @@
+# 목차
+1. 이론
+   1. [C#](C#)
+      - [컨테이너(컬렉션)](컨테이너(컬렉션))
+      - [Async, Await](Async,-Await)
+   2. [.Net Core](.Net-Core)
+      - [Program](Program)
+      - [미들웨어](미들웨어)
+      - [라우팅](라우팅)
+      - [의존성 주입](의존성-주입(Dependency-Injection))
+    3. [Redis](Redis)
+       - [Redis의 특징](Redis의-특징)
+       - [Redis 명령어](Redis-명령어)
+       - [CloudStructures](CloudStructures)
+    4. [HTTP](HTTP)
+       - [대표적인 HTTP 메소드](대표적인-HTTP-메소드)
+2. 프로그래밍
+   1. [계정 생성](계정-생성)
+   2. [로그인](로그인)
+   3. [게임 데이터 로딩](게임-데이터-로딩)
+   4. [우편함](우편함)
+
 # C#
     - 마이크로소프트에서 개발한 .Net Framewor 기반 범용 목적의 다중 패러다임 프로그래밍 언어
 
@@ -17,6 +39,9 @@
 #### await
 - 비동기 작업의 흐름을 제어
 - 해당 라인에서 비동기 작업이 완료될 때까지 대기, 완료되면 결과를 반환받고 다음 코드 실행
+#### async, await을 사용해야 하는 이유
+    I/O작업과 같이 시간이 오래 걸리는 작업을 수행하게 되면 대기 시간이 길어진다.
+    이때, 비동기로 수행하여 I/O작업이 수행되는 동안 스레드가 다른 작업을 수행하여 성능을 높일 수 있다
 
 # .Net Core
     - 웹 앱, 모바일 앱, 데스크톱 프로그램, 게임 프로그램, 사물인터넷 프로그램 등을 만들기 위한 오픈소스 크로스 플랫폼 개발 환경
@@ -75,10 +100,10 @@
 
 *수명주기를 선택할 때는 thread-safe동작 여부, 성능(메모리)에 따라 선택한다
 
-## Redis
+# Redis
     -데이터를 메모리에 저장하고 조회하기 위한 고성능 key-value 저장소이다.
 
-### Redis의 특징
+## Redis의 특징
 ````C#
 1. 메모리에 데이터를 저장하기 떄문에 빠른 읽기와 쓰기가 가능하여 캐시로 활용할 때 효과적이다
 2. key-value외에도 문자열, 리스트, 해시, 셋, Sorted Set 등 다양한 데이터 타입을 지원한다
@@ -88,8 +113,8 @@
 6. 데이터 영속화 지원
 ````
 
-### Redis 명령어
-#### String
+## Redis 명령어
+### String
 1. SET : key에 value 저장
     - SET 'key' 'value'
 2. GET : key에 해당하는 value를 가져옴
@@ -97,7 +122,7 @@
 3. DEL : key와 value 삭제
     - DEL 'key'
 
-#### List
+### List
 1. LPUSH/RPUSH : 왼쪽/오른쪽에 데이터 추가
    - LPUSH '리스트이름' 'value'
 2. LPOP/RPOP : 왼쪽/오른쪽에서 데이터 팝
@@ -116,7 +141,7 @@
    - LTRIM '리스트이름' '시작인덱스' '마지막인덱스'
    - 시작인덱스부터 마지막인덱스까지의 값만 유지하고 나머지 삭제
 
-#### Set
+### Set
 1. SADD : 멈버 추가
    - SADD '셋이름' '멤버'
 2. SMEMBERS : 모든 멤버 조회
@@ -132,7 +157,7 @@
 7. SDIFF : Set의 차집합
    - SDIFF '셋이름1' '셋이름2'
 
-#### Sorted Set
+### Sorted Set
 - 가중치와 함께 값을 저장하여 가중치를 기준으로 데이터를 정렬하여 저장
 1. ZADD : 멤버 추가
    - ZADD '셋이름' '가중치' '멤버'
@@ -150,3 +175,48 @@
    - ZREVRANGE '셋이름' '첫번째범위' '두번째범위'
 7. ZREM : 멤버 제거
    - ZREM '셋이름' '멤버'
+
+## CloudStructures
+- StackExchange.Redis를 기반으로 사용자가 사용하기 쉽게 기능을 추가한 라이브러리
+- Cloud Structures는 Redis의 데이터 타입을 다음과 같은 클래스로 제공하며, 모든 메소드는 비동기이다(https://github.com/xin9le/CloudStructures)  
+  
+| Class                         | Description                             |
+|-------------------------------|-----------------------------------------|
+| RedisBit                      | Bits API                                |
+| RedisDictionary<TKey, TValue> | Hashes API with constrained value type  |
+| RedisGeo<T>                   | Geometries API                          |
+| RedisHashSet<T>               | like RedisDictionary<T, bool>           |
+| RedisHyperLogLog<T>           | HyperLogLog API                         |
+| RedisList<T>                  | Lists API                               |
+| RedisLua                      | Lua eval API                            |
+| RedisSet<T>                   | Sets API                                |
+| RedisSortedSet<T>             | SortedSets API                          |
+| RedisString<T>                | Strings API                             |
+
+- 각 타입별 사용 방법은 다음 깃허브 링크에 있다 (https://github.com/xin9le/CloudStructures/tree/master/src/CloudStructures/Structures)
+
+# HTTP
+    -웹에서 데이터를 주고받기 위해 사용되는 통신 프로토콜
+    -요청은 URL을 통해 특정 웹 페이지나 리소스를 지정하고, 요청 메소드(GET, POST, PUT, DELETE 등)를 사용하여 원하는 동작을 수행한다
+
+## 대표적인 HTTP 메소드
+1. GET
+    - 리소스의 데이터를 서버로부터 가져오는 메소드
+    - URL에 파라미터를 포함하여 데이터를 요청할 수 있다
+    - URL에 쿼리가 노출되기 때문에 중요한 데이터를 전송할 때 사용하면 안된다(ex:비밀번호)
+    - 캐싱이 가능해 전송속도가 빠르며 글자 수 제한이 있다
+      
+2. POST
+    - POST 메소드는 서버로 데이터를 전송하기 위해 사용
+    - 데이터는 요청 본문(request body)에 포함되어 전송
+    - 데이터가 body에 들어가기 때문에 GET에 비해 보안성이 좋다
+    - 데이터 양의 제한이 없다
+      
+3. PUT
+   - PUT 메소드는 서버에 데이터를 업데이트하기 위해 사용
+   - 지정한 URL에 새로운 데이터를 전송하여 해당 데이터로 업데이트
+
+5. DELETE
+   - DELETE 메소드는 서버에서 리소스를 삭제하기 위해 사용
+   - 지정한 URL에 해당하는 리소스를 삭제
+   - 성공적으로 삭제되었을 때는 200을 반환
