@@ -1,24 +1,24 @@
 # 목차
 1. 이론
    1. [C#](#C#)
-      - [컨테이너(컬렉션)](#컨테이너(컬렉션))
-      - [Async, Await](#Async,-Await)
+      - [컨테이너(컬렉션)](#컨테이너컬렉션)
+      - [Async, Await](#Async,%20Await)
    2. [.Net Core](#.Net-Core)
       - [Program](#Program)
       - [미들웨어](#미들웨어)
-      - [라우팅](라우팅)
-      - [의존성 주입](의존성-주입(Dependency-Injection))
-    3. [Redis](Redis)
-       - [Redis의 특징](Redis의-특징)
-       - [Redis 명령어](Redis-명령어)
-       - [CloudStructures](CloudStructures)
-    4. [HTTP](HTTP)
-       - [대표적인 HTTP 메소드](대표적인-HTTP-메소드)
+      - [라우팅](#라우팅)
+      - [의존성 주입](#의존성-주입(Dependency-Injection))
+    3. [Redis](#Redis)
+       - [Redis의 특징](#Redis의-특징)
+       - [Redis 명령어](#Redis-명령어)
+       - [CloudStructures](#CloudStructures)
+    4. [HTTP](#HTTP)
+       - [대표적인 HTTP 메소드](#대표적인-HTTP-메소드)
 2. 프로그래밍
-   1. [계정 생성](계정-생성)
-   2. [로그인](로그인)
-   3. [게임 데이터 로딩](게임-데이터-로딩)
-   4. [우편함](우편함)
+   1. [계정 생성](#계정-생성)
+   2. [로그인](#로그인)
+   3. [게임 데이터 로딩](#게임-데이터-로딩)
+   4. [우편함](#우편함)
 
 # C#
     - 마이크로소프트에서 개발한 .Net Framewor 기반 범용 목적의 다중 패러다임 프로그래밍 언어
