@@ -5,7 +5,7 @@ namespace WebAPIServer.HttpReqRes;
 //Load
 public class LoadMailboxRequest : BaseRequest
 {
-
+    public Int16 PageNum { get; set; }
 }
 
 public class LoadMailboxResponse : BaseResponse
@@ -73,6 +73,7 @@ public class SeeUnRecvMailResponse : BaseResponse
 //Organize
 public class OrganizeMailRequest : BaseRequest
 {
+    public Int16 PageNum { get; set; }
     public bool IsAscending { get; set; }
 }
 

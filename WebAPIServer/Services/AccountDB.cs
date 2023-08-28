@@ -8,28 +8,10 @@ using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Services;
 
-public class AccountDB : IAccountDB
-{
-    readonly IOptions<DbConfig> _dbConfig;
-
-    IDbConnection _dbConnection;
-    SqlKata.Compilers.MySqlCompiler _compiler;
-    QueryFactory _queryFactory;
-
-    public AccountDB(IOptions<DbConfig> dbConfig)
+public class AccountDB : BaseMySqlDB, IAccountDB
+{ 
+    public AccountDB(IOptions<DbConfig> dbConfig) : base(dbConfig)
     {
-        _dbConfig = dbConfig;
-
-        _dbConnection = new MySqlConnection(_dbConfig.Value.AccountDB);
-        _dbConnection.Open();
-
-        _compiler = new SqlKata.Compilers.MySqlCompiler();
-        _queryFactory = new QueryFactory(_dbConnection, _compiler);
-    }
-
-    public void Dispose()
-    {
-        _dbConnection.Close();
     }
 
     public async Task<ErrorCode> CreateAccount(string id, string password)
@@ -71,7 +53,7 @@ public class AccountDB : IAccountDB
                 .Where("ID", id)
                 .FirstOrDefaultAsync<UserAccount>();
 
-            if(account == null)
+            if(account.Password == String.Empty)
             {
                 Console.WriteLine($"[AccountDB.Login] ErrorCode: {nameof(ErrorCode.LoginFailNoAccount)}, ID: {id}");
                 return ErrorCode.LoginFailNoAccount;

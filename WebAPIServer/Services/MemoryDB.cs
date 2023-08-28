@@ -9,7 +9,10 @@ namespace WebAPIServer.Services;
 public class MemoryDB : IMemoryDB
 {
     readonly IOptions<DbConfig> _dbConfig;
-    RedisConnection _redisConnection;
+    readonly RedisConnection _redisConnection;
+
+    readonly TimeSpan _authTokenExpireDay = TimeSpan.FromDays(1);
+    readonly TimeSpan _lockExpireSecond = TimeSpan.FromSeconds(10);
 
     public MemoryDB(IOptions<DbConfig> dbConfig)
     {
@@ -22,7 +25,7 @@ public class MemoryDB : IMemoryDB
     {
         try
         {
-            var redis = new RedisString<string>(_redisConnection, id, TimeSpan.FromDays(AccountConstants.AuthTokenDay));
+            var redis = new RedisString<string>(_redisConnection, id, _authTokenExpireDay);
 
             await redis.SetAsync(authToken);
         }
@@ -37,7 +40,7 @@ public class MemoryDB : IMemoryDB
         return ErrorCode.None;
     }
 
-    public async Task<Tuple<ErrorCode, string>> GetAuthToken(string id)
+    public async Task<(ErrorCode, string)> GetAuthToken(string id)
     {
         try
         {
@@ -47,19 +50,61 @@ public class MemoryDB : IMemoryDB
 
             if (authToken.HasValue)
             {
-                return new Tuple<ErrorCode, string>(ErrorCode.None, authToken.Value);
+                return (ErrorCode.None, authToken.Value);
             }
             else
             {
-                return new Tuple<ErrorCode, string>(ErrorCode.None, "");
+                return (ErrorCode.NoExistingAuthToken, string.Empty);
             }
             
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Console.WriteLine("Error Msg: " + e.Message + ", ");
-            Console.WriteLine($"[MemoryDB.GetAuthToken] ErrorCode: {nameof(ErrorCode.NoExistingAuthToken)}, ID: {id}");
-            return new Tuple<ErrorCode, string>(ErrorCode.NoExistingAuthToken, "");
+            Console.WriteLine("Error Msg: " + ex.Message + ", ");
+            Console.WriteLine($"[MemoryDB.GetAuthToken] ErrorCode: {nameof(ErrorCode.VerifyFailException)}, ID: {id}");
+            return (ErrorCode.VerifyFailException, string.Empty);
+        }
+    }
+
+    public async Task<ErrorCode> LockUserRequest(string id, string authToken)
+    {
+        try
+        {
+            var redis = new RedisString<string>(_redisConnection, id + authToken, _lockExpireSecond);
+
+            if (false == await redis.SetAsync(id, _lockExpireSecond, StackExchange.Redis.When.NotExists))
+            {
+                Console.WriteLine($"[MemoryDB.LockUserRequest] ErrorCode: {nameof(ErrorCode.LockUserRequestFail)}, ID: {id}, AuthToken: {authToken}");
+                return ErrorCode.LockUserRequestFail;
+            }
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error Msg: " + ex.Message + ", ");
+            Console.WriteLine($"[MemoryDB.LockUserRequest] ErrorCode: {nameof(ErrorCode.LockUserRequestFailException)}, ID: {id}, AuthToken: {authToken}");
+            return ErrorCode.LockUserRequestFailException;
+        }
+    }
+
+    public async Task<ErrorCode> UnlockUserRequest(string id, string authToken)
+    {
+        try
+        {
+            var redis = new RedisString<string>(_redisConnection, id + authToken, null);
+
+            if(false == await redis.DeleteAsync())
+            {
+                Console.WriteLine($"[MemoryDB.UnlockUserRequest] ErrorCode: {nameof(ErrorCode.UnlockUserRequestFail)}, ID: {id}, AuthToken: {authToken}");
+                return ErrorCode.UnlockUserRequestFail;
+            }
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error Msg: " + ex.Message + ", ");
+            Console.WriteLine($"[MemoryDB.UnlockUserRequest] ErrorCode: {nameof(ErrorCode.UnlockUserRequestFailException)}, ID: {id}, AuthToken: {authToken}");
+            return ErrorCode.UnlockUserRequestFailException;
         }
     }
 }

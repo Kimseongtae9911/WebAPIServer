@@ -1,5 +1,4 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using WebAPIServer.Constants;
 
 namespace WebAPIServer.HttpReqRes;
 

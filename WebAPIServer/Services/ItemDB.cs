@@ -10,36 +10,10 @@ using WebAPIServer.Services.Interfaces;
 
 namespace WebAPIServer.Services;
 
-public class DbConfig
+public class ItemDB : BaseMySqlDB, IItemDB
 {
-    public string AccountDB { get; set; } = string.Empty;
-    public string ItemDB { get; set; } = string.Empty;
-    public string MailboxDB { get; set; } = string.Empty;
-    public string MemoryDB { get; set; } = string.Empty;
-}
-
-public class ItemDB : IItemDB
-{
-    readonly IOptions<DbConfig> _dbConfig;
-
-    IDbConnection _dbConnection;
-    SqlKata.Compilers.MySqlCompiler _compiler;
-    QueryFactory _queryFactory;
-
-    public ItemDB(IOptions<DbConfig> dbConfig)
+    public ItemDB(IOptions<DbConfig> dbConfig) : base(dbConfig)
     {
-        _dbConfig = dbConfig;
-
-        _dbConnection = new MySqlConnection(_dbConfig.Value.ItemDB);
-        _dbConnection.Open();
-
-        _compiler = new SqlKata.Compilers.MySqlCompiler();
-        _queryFactory = new QueryFactory(_dbConnection, _compiler);
-    }
-
-    public void Dispose()
-    {
-        _dbConnection.Close();
     }
 
     public async Task<ErrorCode> InsertItem(string id, Int16 itemCode)

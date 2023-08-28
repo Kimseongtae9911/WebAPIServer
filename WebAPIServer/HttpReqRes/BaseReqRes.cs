@@ -1,7 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using WebAPIServer.Constants;
-
 namespace WebAPIServer.HttpReqRes;
+
+public class AccountConstants
+{
+    public const Int16 IDLength = 20;
+    public const Int16 PasswordLength = 20;
+}
 
 public class BaseRequest
 {

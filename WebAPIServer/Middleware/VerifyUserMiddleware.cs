@@ -26,30 +26,47 @@ public class VerifyUserMiddleware : IMiddleware
 
         try
         {
-            using (StreamReader reader = new StreamReader(context.Request.Body))
+            using (var reader = new StreamReader(context.Request.Body, Encoding.UTF8))
             {
-                string requestBody = await reader.ReadToEndAsync();
-                MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(requestBody));
+                var requestBody = await reader.ReadToEndAsync();
 
-                var json = JsonDocument.Parse(memoryStream);
-                var authToken = json.RootElement.GetProperty("AuthToken").GetString();
-                var userID = json.RootElement.GetProperty("ID").GetString();
+                if(string.IsNullOrEmpty(requestBody))
+                {
+                    Console.Write($"[VerifyUserMiddleware]: Invalid Request Body");
+                    return;
+                }
 
-                memoryStream.Seek(0, SeekOrigin.Begin);
-                context.Request.Body = memoryStream;
 
-                var result = await _memoryDB.GetAuthToken(userID);
-                if (result.Item1 != ErrorCode.None)
+                var jsonDocument = JsonDocument.Parse(requestBody);
+
+                (var userID, var authToken) = ExtractIDAndAuthToken(jsonDocument);
+
+                if(userID == null)
+                {
+                    return;
+                }
+
+                (var errorCode, var registerdToken) = await _memoryDB.GetAuthToken(userID);
+                if (errorCode != ErrorCode.None)
                 {
                     Console.Write($"[VerifyUserMiddleware]: No Client Info In Redis");
                     return;
                 }
-                else if (result.Item2 == authToken)
+                else if (registerdToken == authToken)
                 {
+                    if(ErrorCode.None != await _memoryDB.LockUserRequest(userID, authToken))
+                    {
+                        return;
+                    }
+
+                    context.Request.Body.Position = 0;
                     await _next(context);
+
+                    await _memoryDB.UnlockUserRequest(userID, authToken);
                     return;
                 }
             }
+
             Console.WriteLine($"[VerifyUserMiddleware]: AuthToken Not Valid");
         }
         catch (Exception e)
@@ -58,5 +75,27 @@ public class VerifyUserMiddleware : IMiddleware
             Console.WriteLine($"[VerifyUserMiddleware] ErrorCode: {nameof(ErrorCode.UnhandleException)}");
         }
         
+    }
+
+    (string userID, string authToken) ExtractIDAndAuthToken(JsonDocument document)
+    {
+        try
+        {
+            var userID = document.RootElement.GetProperty("ID").GetString();
+            var authToken = document.RootElement.GetProperty("AuthToken").GetString();
+
+            if(string.IsNullOrEmpty(userID) || string.IsNullOrEmpty(authToken))
+            {
+                Console.WriteLine("[VerifyUserMiddleware]: ID or AuthToken is null");
+                return (string.Empty, string.Empty);
+            }
+
+            return (userID, authToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error Msg: " + ex.Message);
+            return (string.Empty, string.Empty);
+        }
     }
 }

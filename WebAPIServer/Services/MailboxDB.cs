@@ -7,38 +7,23 @@ using WebAPIServer.TableModel;
 
 namespace WebAPIServer.Services;
 
-public class MailboxDB : IMailboxDB
+public class MailboxDB : BaseMySqlDB, IMailboxDB
 {
-    readonly IOptions<DbConfig> _dbConfig;
+    readonly Int16 _mailNumInPage = 10;
 
-    IDbConnection _dbConnection;
-    SqlKata.Compilers.MySqlCompiler _compiler;
-    QueryFactory _queryFactory;
-
-    public MailboxDB(IOptions<DbConfig> dbConfig)
-    {
-        _dbConfig = dbConfig;
-
-        _dbConnection = new MySqlConnection(_dbConfig.Value.MailboxDB);
-        _dbConnection.Open();
-
-        _compiler = new SqlKata.Compilers.MySqlCompiler();
-        _queryFactory = new QueryFactory(_dbConnection, _compiler);
+    public MailboxDB(IOptions<DbConfig> dbConfig) : base(dbConfig) 
+    { 
     }
 
-    public void Dispose()
-    {
-        _dbConnection.Close();
-    }
-
-    public async Task<Tuple<ErrorCode, List<MailboxInfo>>> LoadMailbox(string id)
+    public async Task<(ErrorCode, List<MailboxInfo>)> LoadMailbox(string id, Int16 pageNum)
     {
         try
         {
             var mails = await _queryFactory.Query("mailbox")
                        .Where("UserID", id)
                        .Where("IsDeleted", false)
-                       .Limit(Constants.MailboxConstants.MailNumInPage)
+                       .Limit(_mailNumInPage)
+                       .Offset((pageNum -1) * _mailNumInPage)
                        .GetAsync<MailboxInfo>();
 
             Console.WriteLine($"[LoadMailbox] ID: {id}");
@@ -79,16 +64,21 @@ public class MailboxDB : IMailboxDB
         }
     }
 
-    public async Task<Tuple<ErrorCode, MailboxInfo>> RecvMail(string id, Int16 mailboxID)
+    public async Task<(ErrorCode, MailboxInfo)> RecvMail(string id, Int16 mailboxID)
     {
         try
         {
             var recvMail = await _queryFactory.Query("mailbox")
                 .Where("UserID", id)
-                .Where("MailboxID", mailboxID)
+                .Where("MailboxID", mailboxID)  
                 .Where("IsReceived", false)
                 .Where("IsDeleted", false)
                 .FirstOrDefaultAsync() ?? new MailboxInfo(-1, -1);
+
+            if(recvMail.MailType == -1 && recvMail.MailDetail == -1)
+            {
+                return new(ErrorCode.NoMatchingMail, new(-1, -1));
+            }
 
             await _queryFactory.Query("mailbox")
                 .Where("UserID", id)
@@ -106,7 +96,7 @@ public class MailboxDB : IMailboxDB
         }
     }
 
-    public async Task<Tuple<ErrorCode, List<MailboxInfo>>> RecvAllMail(string id)
+    public async Task<(ErrorCode, List<MailboxInfo>)> RecvAllMail(string id)
     {
         try
         {
@@ -140,7 +130,7 @@ public class MailboxDB : IMailboxDB
         }
     }
 
-    public async Task<Tuple<ErrorCode, List<MailboxInfo>>> DeleteRecvMail(string id)
+    public async Task<(ErrorCode, List<MailboxInfo>)> DeleteRecvMail(string id)
     {
         try
         {
@@ -152,7 +142,7 @@ public class MailboxDB : IMailboxDB
 
             Console.WriteLine($"[DeleteRecvMail] ID: {id}");
 
-            return await LoadMailbox(id);
+            return await LoadMailbox(id, 1);
         }
         catch (Exception e)
         {
@@ -162,7 +152,7 @@ public class MailboxDB : IMailboxDB
         }
     }
 
-    public async Task<Tuple<ErrorCode, List<MailboxInfo>>> SeeUnRecvMail(string id)
+    public async Task<(ErrorCode, List<MailboxInfo>)> SeeUnRecvMail(string id)
     {
         try
         {
@@ -184,11 +174,11 @@ public class MailboxDB : IMailboxDB
         }
     }
 
-    public async Task<Tuple<ErrorCode, List<MailboxInfo>>> OrganizeMail(string id, bool isAscending)
+    public async Task<(ErrorCode, List<MailboxInfo>)> OrganizeMail(string id, Int16 pageNum, bool isAscending)
     {
         if(isAscending)
         {
-            return await LoadMailbox(id);
+            return await LoadMailbox(id, pageNum);
         }
         else
         {
@@ -198,7 +188,8 @@ public class MailboxDB : IMailboxDB
                     .Where("UserID", id)
                     .Where("IsDeleted", false)
                     .OrderByDesc("ReceivedDate")
-                    .Limit(Constants.MailboxConstants.MailNumInPage)
+                    .Limit(_mailNumInPage)
+                    .Offset((pageNum - 1) * _mailNumInPage)
                     .GetAsync<MailboxInfo>();
 
                 Console.WriteLine($"[OrganizeMail] ID: {id}, IsAscending: {isAscending}");

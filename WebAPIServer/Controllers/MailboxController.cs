@@ -23,7 +23,7 @@ public class MailboxController
     {
         var response = new LoadMailboxResponse();
 
-        (var errorCode, var mails) = await _mailboxDB.LoadMailbox(request.ID);
+        (var errorCode, var mails) = await _mailboxDB.LoadMailbox(request.ID, request.PageNum);
 
         response.Result = errorCode;
         response.Mails = mails;
@@ -119,7 +119,7 @@ public class MailboxController
     {
         var response = new OrganizeMailResponse();
 
-        (var errorCode, var mails) = await _mailboxDB.OrganizeMail(request.ID, request.IsAscending);
+        (var errorCode, var mails) = await _mailboxDB.OrganizeMail(request.ID, request.PageNum, request.IsAscending);
 
         response.Result = errorCode;
         response.Mails = mails;

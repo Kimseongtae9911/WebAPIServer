@@ -19,6 +19,10 @@ public enum ErrorCode : UInt16
     // Redis(Memory) 3000 ~
     VerifyFailException = 3000,
     NoExistingAuthToken = 3001,
+    LockUserRequestFailException = 3002,
+    UnlockUserRequestFailException = 3003,
+    LockUserRequestFail = 3004,
+    UnlockUserRequestFail = 3005,
 
     // Item 4000 ~
     InsertItemFailException = 4000,
@@ -32,5 +36,6 @@ public enum ErrorCode : UInt16
     DeleteRecvMailException = 5004,
     SeeUnRecvMailException = 5005,
     OrganizeMailException = 5006,
-    UpdateMailboxException = 5007
+    UpdateMailboxException = 5007,
+    NoMatchingMail = 5008,
 }
