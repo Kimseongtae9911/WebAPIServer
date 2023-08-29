@@ -1,5 +1,6 @@
 # 목차
-1. 이론
+0. [게임에서의 웹서버](#게임에서의-웹서버)
+2. 이론
    1. [C#](#C)
       - [컨테이너(컬렉션)](#컨테이너컬렉션)
       - [Async, Await](#Async-Await)
@@ -14,14 +15,15 @@
       - [CloudStructures](#CloudStructures)
    4. [HTTP](#HTTP)
       - [대표적인 HTTP 메소드](#대표적인-HTTP-메소드)
-2. [프로그래밍](#프로그래밍)
-   1. [컨트롤러 공통](#컨트롤러-공통)
-   2. [계정 생성](#계정-생성)
-   3. [로그인 및 게임 데이터 로딩](#로그인-및-게임-데이터-로딩)
+3. [프로그래밍](#프로그래밍)
+   1. Program.cs(#Program.cs)
+   2. [컨트롤러 공통](#컨트롤러-공통)
+   3. [계정 생성](#계정-생성)
+   4. [로그인 및 게임 데이터 로딩](#로그인-및-게임-데이터-로딩)
       - [로그인](#로그인)
       - [인증토큰 등록](#인증토큰-등록)
       - [게임 데이터 로딩](#게임-데이터-로딩)
-   4. [우편함](#우편함)
+   5. [우편함](#우편함)
       - [우편함 로딩](#우편함-로딩)
       - [메일 전송](#메일-전송)
       - [메일 받기](#메일-받기)
@@ -31,6 +33,24 @@
       - [메일 정렬](#메일-정렬)
       - [우편함 업데이트](#우편함-업데이트)
       - [아이템 등록](#아이템-등록)
+   6. [유저 인증](#유저-인증)
+   7. [Redis를 활용한 Lock](#Redis를-활용한-Lock)
+
+---
+# 게임에서의 웹서버
+## 게임에서 웹서버를 사용하는 이유
+   1. 개발의 편의성 및 개발속도(자료와 라이브러리가 많기 때문에)
+   2. 서버에 오류가 발생하였을때, 프로그램(유저) 전체에 문제가 생기는 것이 아닌 일부에만 문제가 발생
+   3. 모든 데이터는 DB를 이용하여 처리하기 때문에 서버 다운 시 롤백이 없음
+   4. Stateless이기 때문에 서버 확장이 비교적 쉽다
+
+## 웹서버를 활용한 서버 구조
+![image](https://github.com/Kimseongtae9911/WebAPIServer/assets/84197808/0fa67053-e77d-4f67-b400-3f0e56759ba2)
+````
+Load Balancer는 클라이언트의 요청을 서버로 균일하게 전달하는 역할을 한다
+클라이언트들의 요청은 Load Balancer를 거쳐 서버에 분배되고
+각 서버는 요청에 따라 로직을 수행한다
+````
 
 ---
 # C#
@@ -67,6 +87,8 @@
 - 앱에서 요구하는 서비스와 미들웨어를 통한 파이프라인이 구성됨
 
 ### 미들웨어
+![image](https://github.com/Kimseongtae9911/WebAPIServer/assets/84197808/5cd15e11-477b-4d19-bcfa-2a3c292afe67)
+
 - HTTP요청에 대해 요청대리자가 존재하며, .NET Core 파이프라인의 수행을 차례대로 수행
 - 대리자가 다음 대리자에 요청을 전달하지 않을 때, 이를 요청 파이프라인을 short-circuiting이라고 하며, 단락은 불필요한 작업을 방지한다. 다만, 클라이언트에 응답을 전송한 후 short-circuiting을 하면 안된다
 
@@ -239,6 +261,40 @@
 
 ---
 # 프로그래밍
+
+---
+## Program.cs
+```C#
+var builder = WebApplication.CreateBuilder(args);
+
+IConfiguration configuration = builder.Configuration;
+
+builder.Services.Configure<DbConfig>(configuration.GetSection(nameof(DbConfig)));
+
+builder.Services.AddTransient<IAccountDB, AccountDB>();
+builder.Services.AddTransient<IItemDB, ItemDB>();
+builder.Services.AddTransient<IMailboxDB, MailboxDB>();
+builder.Services.AddSingleton<IMemoryDB, MemoryDB>();
+builder.Services.AddControllers();
+
+var app = builder.Build();
+
+app.UseRouting();
+
+app.UseMiddleware<VerifyUserMiddleware>();
+
+app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+
+app.Run(configuration["ServerAddress"]);
+```
+````
+AccountDB, ItemDB, MailboxDB등 MySqlConnection을 사용하는 클래스는 MySqlConnection객체가 thread-safe하지 않기 때문에 각 요청마다 객체를 만드는 Trasient 수명주기를 사용
+MemoryDB(Redis)는 thread-safe하기 때문에 각 요청마다 객체를 만들 필요가 없으므로 Singleton 수명주기를 사용
+AddControllers()-> 컨트롤러를 등록, 관리하며 라우팅을 할 수 있도록 해준다
+UseRouting()-> 라우팅 미들웨어를 등록
+UseMiddleware()-> 사용자 인증 커스텀 미들웨어 등록
+UseEndPoints()-> 엔드포인트 미들웨어 등록., 등록된 컨트롤러를 어떤 경로에 노출할지 설정
+````
 
 ---
 ## 컨트롤러 공통
@@ -975,4 +1031,169 @@ SqlKata에는 MySql의 ON DUPLICATE KEY를 지원하는 메소드가 없다
 따라서 SqlKata의 raw쿼리 기능을 활용하여 쿼리문을 만들어 사용한다
 
 중복된 키가 있을 경우 Count값을 증가시키고 없을 경우에는 Count를 1로 하여 테이블에 삽입한다
+````
+
+---
+## 유저인증
+```C#
+public class VerifyUserMiddleware : IMiddleware
+{
+    private readonly RequestDelegate _next;
+    readonly IMemoryDB _memoryDB;
+
+    public VerifyUserMiddleware(RequestDelegate next, IMemoryDB memoryDB)
+    {
+        _next = next;
+        _memoryDB = memoryDB;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if(context.Request.Path.StartsWithSegments("/CreateAccout") || context.Request.Path.StartsWithSegments("/Login"))
+        {
+            await _next(context);
+            return;
+        }
+
+        try
+        {
+            context.Request.EnableBuffering();
+
+            using (var reader = new StreamReader(context.Request.Body, Encoding.UTF8))
+            {
+                var requestBody = await reader.ReadToEndAsync();
+
+                if(string.IsNullOrEmpty(requestBody))
+                {
+                    Console.Write($"[VerifyUserMiddleware]: Invalid Request Body");
+                    return;
+                }
+
+
+                var jsonDocument = JsonDocument.Parse(requestBody);
+
+                (var userID, var authToken) = ExtractIDAndAuthToken(jsonDocument);
+
+                if(userID == null)
+                {
+                    return;
+                }
+
+                (var errorCode, var registerdToken) = await _memoryDB.GetAuthToken(userID);
+                if (errorCode != ErrorCode.None)
+                {
+                    Console.Write($"[VerifyUserMiddleware]: No Client Info In Redis");
+                    return;
+                }
+                else if (registerdToken == authToken)
+                {
+                    if(ErrorCode.None != await _memoryDB.LockUserRequest(userID, authToken))
+                    {
+                        return;
+                    }
+
+                    context.Request.Body.Position = 0;
+                    await _next(context);
+
+                    await _memoryDB.UnlockUserRequest(userID, authToken);
+                    return;
+                }
+            }
+
+            Console.WriteLine($"[VerifyUserMiddleware]: AuthToken Not Valid");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Error Msg: " + e.Message);
+            Console.WriteLine($"[VerifyUserMiddleware] ErrorCode: {nameof(ErrorCode.UnhandleException)}");
+        }
+        
+    }
+
+    (string userID, string authToken) ExtractIDAndAuthToken(JsonDocument document)
+    {
+        try
+        {
+            var userID = document.RootElement.GetProperty("ID").GetString();
+            var authToken = document.RootElement.GetProperty("AuthToken").GetString();
+
+            if(string.IsNullOrEmpty(userID) || string.IsNullOrEmpty(authToken))
+            {
+                Console.WriteLine("[VerifyUserMiddleware]: ID or AuthToken is null");
+                return (string.Empty, string.Empty);
+            }
+
+            return (userID, authToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error Msg: " + ex.Message);
+            return (string.Empty, string.Empty);
+        }
+    }
+}
+```
+````
+인증토큰을 기반으로 로그인한 사용자와 동일한 사용자가 요청을 보냈는지 확인하는 커스텀 미들웨어
+
+요청 URL을 통해 계정생성과 로그인의 요청의 경우 해당 미들웨어를 거치지 않고 다음 미들웨어로 short-circuiting한다
+Request body에서 아이디와 인증토큰을 추출하여 Redis에 등록된 인증토큰과 일치하는지 확인한다
+이후 스트림 위치를 초기로 돌리고 다음 미들웨어로 넘어간다
+
+클라이언트에서 요청을 동시에 2개 이상을 보낼 수 있는데, 같은 클라이언트에 대해 동시에 2개의 요청을 처리하게 되면
+데이터베이스의 데이터가 의도하지 않은 방향으로 결과가 나올 수 있다.
+따라서 Redis를 활용하여 락을 걸어 동시에 2개 이상의 요청이 처리되지 않도록 한다
+
+````
+
+---
+## Redis를 활용한 Lock
+```C#
+public async Task<ErrorCode> LockUserRequest(string id, string authToken)
+    {
+        try
+        {
+            var redis = new RedisString<string>(_redisConnection, id + authToken, _lockExpireSecond);
+
+            if (false == await redis.SetAsync(id, _lockExpireSecond, StackExchange.Redis.When.NotExists))
+            {
+                Console.WriteLine($"[MemoryDB.LockUserRequest] ErrorCode: {nameof(ErrorCode.LockUserRequestFail)}, ID: {id}, AuthToken: {authToken}");
+                return ErrorCode.LockUserRequestFail;
+            }
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error Msg: " + ex.Message + ", ");
+            Console.WriteLine($"[MemoryDB.LockUserRequest] ErrorCode: {nameof(ErrorCode.LockUserRequestFailException)}, ID: {id}, AuthToken: {authToken}");
+            return ErrorCode.LockUserRequestFailException;
+        }
+    }
+
+    public async Task<ErrorCode> UnlockUserRequest(string id, string authToken)
+    {
+        try
+        {
+            var redis = new RedisString<string>(_redisConnection, id + authToken, null);
+
+            if(false == await redis.DeleteAsync())
+            {
+                Console.WriteLine($"[MemoryDB.UnlockUserRequest] ErrorCode: {nameof(ErrorCode.UnlockUserRequestFail)}, ID: {id}, AuthToken: {authToken}");
+                return ErrorCode.UnlockUserRequestFail;
+            }
+            return ErrorCode.None;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error Msg: " + ex.Message + ", ");
+            Console.WriteLine($"[MemoryDB.UnlockUserRequest] ErrorCode: {nameof(ErrorCode.UnlockUserRequestFailException)}, ID: {id}, AuthToken: {authToken}");
+            return ErrorCode.UnlockUserRequestFailException;
+        }
+    }
+```
+````
+LockUserRequest메소드를 통해 아이디와 인증토큰을 키값으로 하여 Redis에 등록을 하는데,
+이때 StackExchange.Redis.When.NotExists플래그를 이용하여 해당 키값이 없을 때만 등록하도록 한다
+
+UnlockUserRequest메소드를 통해 LockUserRequest메소드를 이용하여 등록했던 키를 삭제하는 작업을 수행한다
 ````
