@@ -7,6 +7,7 @@ using Dapper;
 using SqlKata;
 using System.Collections;
 using WebAPIServer.Services.Interfaces;
+using WebAPIServer.TableModel;
 
 namespace WebAPIServer.Services;
 
@@ -36,29 +37,23 @@ public class ItemDB : BaseMySqlDB, IItemDB
         }
     }
 
-    public async Task<Tuple<ErrorCode, List<Tuple<Int16, Int16>>>> LoadItem(string id)
+    public async Task<(ErrorCode, List<ItemInfo>)> LoadItem(string id)
     {
-        var list = new List<Tuple<Int16, Int16>>();
-
         try
         {
             var items = await _queryFactory.Query("item")
                        .Where("ID", id)
-                       .GetAsync();
+                       .GetAsync<ItemInfo>();
 
-            foreach (var item in items)
-            {
-                list.Add(new ((Int16)item.ItemCode, (Int16)item.Count));
-            }
 
             Console.WriteLine($"[LoadItem] ID: {id}");
-            return new(ErrorCode.None, list);
+            return (ErrorCode.None, items.ToList());
         }
         catch (Exception e)
         {
             Console.WriteLine("Error Msg: " + e.Message + ", ");
             Console.WriteLine($"[ItemDB.LoadItem] ErrorCode: {nameof(ErrorCode.LoadItemFailException)}, ID: {id}");
-            return new (ErrorCode.LoadItemFailException, list);
+            return (ErrorCode.LoadItemFailException, new List<ItemInfo>());
         }
 
     }

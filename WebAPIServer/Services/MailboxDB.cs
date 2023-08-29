@@ -73,7 +73,7 @@ public class MailboxDB : BaseMySqlDB, IMailboxDB
                 .Where("MailboxID", mailboxID)  
                 .Where("IsReceived", false)
                 .Where("IsDeleted", false)
-                .FirstOrDefaultAsync() ?? new MailboxInfo(-1, -1);
+                .FirstOrDefaultAsync<MailboxInfo>() ?? new MailboxInfo(-1, -1);
 
             if(recvMail.MailType == -1 && recvMail.MailDetail == -1)
             {
@@ -160,6 +160,7 @@ public class MailboxDB : BaseMySqlDB, IMailboxDB
                        .Where("UserID", id)
                        .Where("IsReceived", false)
                        .Where("IsDeleted", false)
+                       .Limit(_mailNumInPage)
                        .GetAsync<MailboxInfo>();
 
 
@@ -203,6 +204,7 @@ public class MailboxDB : BaseMySqlDB, IMailboxDB
             } 
         }
     }
+
     public async Task<ErrorCode> UpdateMailbox(string id)
     {
         try

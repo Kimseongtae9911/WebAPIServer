@@ -26,6 +26,8 @@ public class VerifyUserMiddleware : IMiddleware
 
         try
         {
+            context.Request.EnableBuffering();
+
             using (var reader = new StreamReader(context.Request.Body, Encoding.UTF8))
             {
                 var requestBody = await reader.ReadToEndAsync();
