@@ -48,7 +48,11 @@ public class LoginController : ControllerBase
             return response;
         }
 
-        response.Items = list;
+        foreach (var item in list)
+        {
+            response.Items.Add(item);
+        }
+        //response.Items = list;
 
         response.AuthToken = authToken;
         return response;

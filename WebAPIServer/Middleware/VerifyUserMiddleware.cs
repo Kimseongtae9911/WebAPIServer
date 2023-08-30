@@ -18,7 +18,7 @@ public class VerifyUserMiddleware : IMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        if(context.Request.Path.StartsWithSegments("/CreateAccout") || context.Request.Path.StartsWithSegments("/Login"))
+        if(context.Request.Path.StartsWithSegments("/CreateAccount") || context.Request.Path.StartsWithSegments("/Login"))
         {
             await _next(context);
             return;

@@ -9,7 +9,7 @@ namespace WebAPIServer.Services;
 
 public class MailboxDB : BaseMySqlDB, IMailboxDB
 {
-    readonly Int16 _mailNumInPage = 10;
+    readonly Int16 _mailNumInPage = 3;
 
     public MailboxDB(IOptions<DbConfig> dbConfig) : base(dbConfig) 
     { 

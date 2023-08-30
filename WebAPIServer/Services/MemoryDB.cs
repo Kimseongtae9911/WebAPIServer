@@ -20,6 +20,11 @@ public class MemoryDB : IMemoryDB
         _redisConnection = new RedisConnection(config);
     }
 
+    public void Dispose()
+    {
+        _redisConnection.GetConnection().Close();
+    }
+
     public async Task<ErrorCode> RegisterUser(string id, string authToken)
     {
         try
